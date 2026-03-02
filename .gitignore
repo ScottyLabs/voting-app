@@ -1,0 +1,20 @@
+# Nix / devenv
+.devenv/
+.devenv.flake.nix
+.pre-commit-config.yaml
+result
+result-*
+
+# direnv
+.direnv/
+
+# Rust
+target/
+
+# Bun
+node_modules/
+dist/
+
+# Environment
+.env
+.DS_Store
