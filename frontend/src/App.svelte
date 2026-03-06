@@ -1,47 +1,33 @@
 <script lang="ts">
-  import svelteLogo from './assets/svelte.svg'
-  import viteLogo from '/vite.svg'
-  import Counter from './lib/Counter.svelte'
+    import Welcome from "./screens/welcome.svelte";
+    import Welcome2 from "./screens/welcome2.svelte";
+    import Voting from "./screens/voting.svelte";
+    import VotingMotion from "./screens/votingMotion.svelte";
+    import SessionCreation from "./screens/sessionCreation.svelte";
+    import ResultsAdmin from "./screens/resultsAdmin.svelte";
+    import ResultsVoter from "./screens/resultsVoter.svelte";
+
+    let screen = "welcome";
 </script>
 
-<main>
-  <div>
-    <a href="https://vite.dev" target="_blank" rel="noreferrer">
-      <img src={viteLogo} class="logo" alt="Vite Logo" />
-    </a>
-    <a href="https://svelte.dev" target="_blank" rel="noreferrer">
-      <img src={svelteLogo} class="logo svelte" alt="Svelte Logo" />
-    </a>
-  </div>
-  <h1>Vite + Svelte</h1>
-
-  <div class="card">
-    <Counter />
-  </div>
-
-  <p>
-    Check out <a href="https://github.com/sveltejs/kit#readme" target="_blank" rel="noreferrer">SvelteKit</a>, the official Svelte app framework powered by Vite!
-  </p>
-
-  <p class="read-the-docs">
-    Click on the Vite and Svelte logos to learn more
-  </p>
-</main>
+{#if screen === "welcome"}
+    <Welcome onNext={() => (screen = "welcome2")} />
+{:else if screen === "welcome2"}
+    <Welcome2
+        toVoter={() => (screen = "voting")}
+        toAdmin={() => (screen = "SessionCreation")}
+    />
+{:else if screen === "voting"}
+    <Voting onNext={() => (screen = "votingMotion")} />
+{:else if screen === "votingMotion"}
+    <VotingMotion onNext={() => (screen = "ResultsVoter")} />
+{:else if screen === "SessionCreation"}
+    <SessionCreation onNext={() => (screen = "ResultsAdmin")} />
+{:else if screen === "ResultsAdmin"}
+    <ResultsAdmin onNext={() => (screen = "SessionCreation")} />
+{:else if screen === "ResultsVoter"}
+    <ResultsVoter onNext={() => (screen = "welcome2")} />
+{/if}
 
 <style>
-  .logo {
-    height: 6em;
-    padding: 1.5em;
-    will-change: filter;
-    transition: filter 300ms;
-  }
-  .logo:hover {
-    filter: drop-shadow(0 0 2em #646cffaa);
-  }
-  .logo.svelte:hover {
-    filter: drop-shadow(0 0 2em #ff3e00aa);
-  }
-  .read-the-docs {
-    color: #888;
-  }
 </style>
