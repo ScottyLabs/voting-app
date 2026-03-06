@@ -6,4 +6,7 @@
     }
 </script>
 
-<button onclick={handleClick}> Continue </button>
+<main>
+    <h1>Results for Admin Screen</h1>
+    <button onclick={handleClick}> Continue </button>
+</main>

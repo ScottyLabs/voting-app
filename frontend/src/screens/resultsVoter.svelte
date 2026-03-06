@@ -7,5 +7,6 @@
 </script>
 
 <main>
+    <h1>Results for Voters Screen</h1>
     <button onclick={handleClick}> Continue </button>
 </main>

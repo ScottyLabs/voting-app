@@ -8,22 +8,20 @@
 </script>
 
 <main>
-    <div class="card">
-        <div>
-            <h1>CampusVoting</h1>
-            <h3>Powered by ScottyLabs</h3>
-        </div>
-        <img
-            src={logo}
-            alt="CampusVoting Logo"
-            class="logo"
-            width="350px"
-            height="350px"
-        />
-        <button onclick={handleClick} class="authBtn">
-            SIGN IN WITH CMU SSO
-        </button>
+    <div>
+        <h1>CampusVoting</h1>
+        <h3>Powered by ScottyLabs</h3>
     </div>
+    <img
+        src={logo}
+        alt="CampusVoting Logo"
+        class="logo"
+        width="350px"
+        height="350px"
+    />
+    <button onclick={handleClick} class="authBtn">
+        SIGN IN WITH CMU SSO
+    </button>
 </main>
 
 <style>
@@ -31,17 +29,6 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-    }
-
-    .card {
-        border: 5px solid var(--colors-background);
-        border-radius: 12px;
-        padding: 3rem;
-        width: 450px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 1.5rem;
     }
 
     .authBtn {
