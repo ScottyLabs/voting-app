@@ -1,5 +1,5 @@
 <script lang="ts">
-    import logo from "/Users/johncao/Documents/GitHub/voting-app/frontend/src/lib/images/logoplaceholder.png";
+    import logo from "../lib/images/logoplaceholder.png";
     let { onNext } = $props();
 
     function handleClick() {

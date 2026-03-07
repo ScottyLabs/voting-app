@@ -24,6 +24,12 @@
             document.body.style.backgroundColor = bgDark;
         } else if (screen === "votingMotion") {
             document.body.style.backgroundColor = bgDark;
+        } else if (screen === "SessionCreation") {
+            document.body.style.backgroundColor = bgDark;
+        } else if (screen === "ResultsAdmin") {
+            document.body.style.backgroundColor = bgLight;
+        } else {
+            document.body.style.backgroundColor = bgLight;
         }
     }
 
@@ -51,7 +57,10 @@
     </div>
 {:else if screen === "SessionCreation"}
     <div transition:slide>
-        <SessionCreation onNext={() => (screen = "ResultsAdmin")} />
+        <SessionCreation
+            onNext={() => (screen = "ResultsAdmin")}
+            onBack={() => (screen = "welcome2")}
+        />
     </div>
 {:else if screen === "ResultsAdmin"}
     <div transition:slide>
@@ -66,5 +75,9 @@
 <style>
     :global(body) {
         transition: background-color 0.6s ease-in-out;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
     }
 </style>
