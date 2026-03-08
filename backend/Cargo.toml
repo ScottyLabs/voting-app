@@ -3,6 +3,15 @@ name = "backend"
 version = "0.1.0"
 edition = "2024"
 
+[workspace]
+resolver = "2"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "AGPL-3.0-or-later"
+
 [dependencies]
 axum = "0.8.8"
 chrono = "0.4.44"
