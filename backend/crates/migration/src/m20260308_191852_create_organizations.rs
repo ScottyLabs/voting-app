@@ -18,8 +18,13 @@ impl MigrationTrait for Migration {
                             .auto_increment()
                             .primary_key(),
                     )
-                        .col(ColumnDef::new(Organization::Name).string().not_null())
-                    .col(ColumnDef::new(Organization::Links).array(ColumnType::String(StringLen::None)).not_null().default(Expr::value(Vec::<String>::new())))
+                    .col(ColumnDef::new(Organization::Name).string().not_null())
+                    .col(
+                        ColumnDef::new(Organization::Links)
+                            .array(ColumnType::String(StringLen::None))
+                            .not_null()
+                            .default(Expr::value(Vec::<String>::new())),
+                    )
                     .to_owned(),
             )
             .await
