@@ -20,7 +20,7 @@ impl MigrationTrait for Migration {
                     )
                     .col(ColumnDef::new(User::Name).string().not_null())
                     .col(
-                        ColumnDef::new(User::CreatedTime)
+                        ColumnDef::new(User::CreatedAt)
                             .timestamp_with_time_zone()
                             .not_null()
                             .default(Expr::current_timestamp()),
@@ -42,5 +42,5 @@ pub enum User {
     Table,
     Id,
     Name,
-    CreatedTime,
+    CreatedAt,
 }
