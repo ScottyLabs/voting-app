@@ -13,12 +13,12 @@
     // Placeholder values until finalization of what this entails
     const voteTypeOptions = ["Type 1", "Type 2", "TenType"];
 
-    let ballot: Ballot = {
+    let ballot: Ballot = $state({
         name: "",
         start_time: "",
         end_time: "",
         vote_type: "",
-    };
+    });
 
     let message = $state("");
     let showBanner = $state(false);
