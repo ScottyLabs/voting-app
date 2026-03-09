@@ -46,19 +46,13 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Meeting::OrganizationId).integer().not_null())
                     .foreign_key(
                         ForeignKey::create()
-                            .from(
-                                Meeting::Table,
-                                Meeting::CreatedByUserId,
-                            )
+                            .from(Meeting::Table, Meeting::CreatedByUserId)
                             .to(User::Table, User::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )
                     .foreign_key(
                         ForeignKey::create()
-                            .from(
-                                Meeting::Table,
-                                Meeting::OrganizationId,
-                            )
+                            .from(Meeting::Table, Meeting::OrganizationId)
                             .to(Organization::Table, Organization::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )
