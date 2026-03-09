@@ -15,7 +15,9 @@
         .getPropertyValue("--colors-background")
         .trim();
 
-    $: {
+    let screen = $state("auth");
+
+    $effect(() => {
         if (screen === "auth") {
             document.body.style.backgroundColor = bgLight;
         } else if (screen === "join") {
@@ -31,9 +33,7 @@
         } else {
             document.body.style.backgroundColor = bgLight;
         }
-    }
-
-    let screen = "auth";
+    });
 </script>
 
 {#if screen === "auth"}

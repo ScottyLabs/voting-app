@@ -1,6 +1,11 @@
 <script lang="ts">
     import logo from "../lib/images/logoplaceholder.png";
-    let { onNext } = $props();
+
+    type Props = {
+        onNext: () => void;
+    };
+
+    let { onNext }: Props = $props();
 
     function handleClick() {
         onNext();
