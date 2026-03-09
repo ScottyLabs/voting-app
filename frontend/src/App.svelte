@@ -1,47 +1,86 @@
 <script lang="ts">
-  import svelteLogo from './assets/svelte.svg'
-  import viteLogo from '/vite.svg'
-  import Counter from './lib/Counter.svelte'
+    import { slide } from "svelte/transition";
+    import AuthPage from "./screens/authPage.svelte";
+    import JoinPage from "./screens/joinPage.svelte";
+    import Voting from "./screens/voting.svelte";
+    import VotingMotion from "./screens/votingMotion.svelte";
+    import SessionCreation from "./screens/sessionCreation.svelte";
+    import ResultsAdmin from "./screens/resultsAdmin.svelte";
+    import ResultsVoter from "./screens/resultsVoter.svelte";
+
+    let bgDark = getComputedStyle(document.documentElement)
+        .getPropertyValue("--colors-backgroundDark")
+        .trim();
+    let bgLight = getComputedStyle(document.documentElement)
+        .getPropertyValue("--colors-background")
+        .trim();
+
+    let screen = $state("auth");
+
+    $effect(() => {
+        if (screen === "auth") {
+            document.body.style.backgroundColor = bgLight;
+        } else if (screen === "join") {
+            document.body.style.backgroundColor = bgLight;
+        } else if (screen === "voting") {
+            document.body.style.backgroundColor = bgDark;
+        } else if (screen === "votingMotion") {
+            document.body.style.backgroundColor = bgDark;
+        } else if (screen === "SessionCreation") {
+            document.body.style.backgroundColor = bgDark;
+        } else if (screen === "ResultsAdmin") {
+            document.body.style.backgroundColor = bgLight;
+        } else {
+            document.body.style.backgroundColor = bgLight;
+        }
+    });
 </script>
 
-<main>
-  <div>
-    <a href="https://vite.dev" target="_blank" rel="noreferrer">
-      <img src={viteLogo} class="logo" alt="Vite Logo" />
-    </a>
-    <a href="https://svelte.dev" target="_blank" rel="noreferrer">
-      <img src={svelteLogo} class="logo svelte" alt="Svelte Logo" />
-    </a>
-  </div>
-  <h1>Vite + Svelte</h1>
-
-  <div class="card">
-    <Counter />
-  </div>
-
-  <p>
-    Check out <a href="https://github.com/sveltejs/kit#readme" target="_blank" rel="noreferrer">SvelteKit</a>, the official Svelte app framework powered by Vite!
-  </p>
-
-  <p class="read-the-docs">
-    Click on the Vite and Svelte logos to learn more
-  </p>
-</main>
+{#if screen === "auth"}
+    <div transition:slide>
+        <AuthPage onNext={() => (screen = "join")} />
+    </div>
+{:else if screen === "join"}
+    <div transition:slide>
+        <JoinPage
+            toVoter={() => (screen = "voting")}
+            toAdmin={() => (screen = "SessionCreation")}
+        />
+    </div>
+{:else if screen === "voting"}
+    <div transition:slide>
+        <Voting
+            onNext={() => (screen = "votingMotion")}
+            onBack={() => (screen = "join")}
+        />
+    </div>
+{:else if screen === "votingMotion"}
+    <div transition:slide>
+        <VotingMotion onNext={() => (screen = "ResultsVoter")} />
+    </div>
+{:else if screen === "SessionCreation"}
+    <div transition:slide>
+        <SessionCreation
+            onNext={() => (screen = "ResultsAdmin")}
+            onBack={() => (screen = "join")}
+        />
+    </div>
+{:else if screen === "ResultsAdmin"}
+    <div transition:slide>
+        <ResultsAdmin onNext={() => (screen = "SessionCreation")} />
+    </div>
+{:else if screen === "ResultsVoter"}
+    <div transition:slide>
+        <ResultsVoter onNext={() => (screen = "join")} />
+    </div>
+{/if}
 
 <style>
-  .logo {
-    height: 6em;
-    padding: 1.5em;
-    will-change: filter;
-    transition: filter 300ms;
-  }
-  .logo:hover {
-    filter: drop-shadow(0 0 2em #646cffaa);
-  }
-  .logo.svelte:hover {
-    filter: drop-shadow(0 0 2em #ff3e00aa);
-  }
-  .read-the-docs {
-    color: #888;
-  }
+    :global(body) {
+        transition: background-color 0.6s ease-in-out;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+    }
 </style>
