@@ -46,7 +46,7 @@
 
 {#if showBanner}
     <div class="banner" in:fly={{ y: -30 }} out:fly={{ y: -30 }}>
-        ${message}
+        {message}
     </div>
 {/if}
 

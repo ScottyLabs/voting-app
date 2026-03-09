@@ -8,12 +8,12 @@
     import ResultsAdmin from "./screens/resultsAdmin.svelte";
     import ResultsVoter from "./screens/resultsVoter.svelte";
 
-    let bgDark = getComputedStyle(document.documentElement).getPropertyValue(
-        "--colors-backgroundDark",
-    );
-    let bgLight = getComputedStyle(document.documentElement).getPropertyValue(
-        "--colors-background",
-    );
+    let bgDark = getComputedStyle(document.documentElement)
+        .getPropertyValue("--colors-backgroundDark")
+        .trim();
+    let bgLight = getComputedStyle(document.documentElement)
+        .getPropertyValue("--colors-background")
+        .trim();
 
     $: {
         if (screen === "welcome") {
