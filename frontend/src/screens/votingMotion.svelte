@@ -15,7 +15,7 @@
         vote_type: "",
     };
 
-    let motion: string = $state("Motion to touch Max Tentype Wen");
+    let motion: string = $state("Motion description here");
 
     function vote(event: Event) {
         event.preventDefault();
