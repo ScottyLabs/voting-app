@@ -49,7 +49,10 @@
     </div>
 {:else if screen === "voting"}
     <div transition:slide>
-        <Voting onNext={() => (screen = "votingMotion")} />
+        <Voting
+            onNext={() => (screen = "votingMotion")}
+            onBack={() => (screen = "welcome2")}
+        />
     </div>
 {:else if screen === "votingMotion"}
     <div transition:slide>
