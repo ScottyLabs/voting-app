@@ -5,7 +5,7 @@
 
     interface Ballot {
         name: string;
-        start_time: string; // format: "YYYY-MM-DD"
+        start_time: string; // format: "YYYY-MM-DDTHH:MM"
         end_time: string; // this ^
         vote_type: string;
     }
@@ -68,12 +68,20 @@
 
             <label>
                 <h3>Start Time:</h3>
-                <input type="date" bind:value={ballot.start_time} required />
+                <input
+                    type="datetime-local"
+                    bind:value={ballot.start_time}
+                    required
+                />
             </label>
 
             <label>
                 <h3>End Time:</h3>
-                <input type="date" bind:value={ballot.end_time} required />
+                <input
+                    type="datetime-local"
+                    bind:value={ballot.end_time}
+                    required
+                />
             </label>
 
             <label>
