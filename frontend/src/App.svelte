@@ -1,7 +1,7 @@
 <script lang="ts">
     import { slide } from "svelte/transition";
-    import Welcome from "./screens/welcome.svelte";
-    import Welcome2 from "./screens/welcome2.svelte";
+    import AuthPage from "./screens/authPage.svelte";
+    import JoinPage from "./screens/joinPage.svelte";
     import Voting from "./screens/voting.svelte";
     import VotingMotion from "./screens/votingMotion.svelte";
     import SessionCreation from "./screens/sessionCreation.svelte";
@@ -16,9 +16,9 @@
         .trim();
 
     $: {
-        if (screen === "welcome") {
+        if (screen === "auth") {
             document.body.style.backgroundColor = bgLight;
-        } else if (screen === "welcome2") {
+        } else if (screen === "join") {
             document.body.style.backgroundColor = bgLight;
         } else if (screen === "voting") {
             document.body.style.backgroundColor = bgDark;
@@ -33,16 +33,16 @@
         }
     }
 
-    let screen = "welcome";
+    let screen = "auth";
 </script>
 
-{#if screen === "welcome"}
+{#if screen === "auth"}
     <div transition:slide>
-        <Welcome onNext={() => (screen = "welcome2")} />
+        <AuthPage onNext={() => (screen = "join")} />
     </div>
-{:else if screen === "welcome2"}
+{:else if screen === "join"}
     <div transition:slide>
-        <Welcome2
+        <JoinPage
             toVoter={() => (screen = "voting")}
             toAdmin={() => (screen = "SessionCreation")}
         />
@@ -51,7 +51,7 @@
     <div transition:slide>
         <Voting
             onNext={() => (screen = "votingMotion")}
-            onBack={() => (screen = "welcome2")}
+            onBack={() => (screen = "join")}
         />
     </div>
 {:else if screen === "votingMotion"}
@@ -62,7 +62,7 @@
     <div transition:slide>
         <SessionCreation
             onNext={() => (screen = "ResultsAdmin")}
-            onBack={() => (screen = "welcome2")}
+            onBack={() => (screen = "join")}
         />
     </div>
 {:else if screen === "ResultsAdmin"}
@@ -71,7 +71,7 @@
     </div>
 {:else if screen === "ResultsVoter"}
     <div transition:slide>
-        <ResultsVoter onNext={() => (screen = "welcome2")} />
+        <ResultsVoter onNext={() => (screen = "join")} />
     </div>
 {/if}
 
