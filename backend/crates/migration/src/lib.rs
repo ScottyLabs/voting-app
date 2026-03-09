@@ -2,6 +2,7 @@ pub use sea_orm_migration::prelude::*;
 
 mod m20260308_183617_create_users;
 mod m20260308_191852_create_organizations;
+mod m20260308_211556_create_organization_members;
 
 pub struct Migrator;
 
@@ -11,6 +12,7 @@ impl MigratorTrait for Migrator {
         vec![
             Box::new(m20260308_183617_create_users::Migration),
             Box::new(m20260308_191852_create_organizations::Migration),
+            Box::new(m20260308_211556_create_organization_members::Migration),
         ]
     }
 }
