@@ -3,9 +3,7 @@ pub use sea_orm_migration::prelude::*;
 mod m20260308_183617_create_users;
 mod m20260308_191852_create_organizations;
 mod m20260308_211556_create_organization_members;
-mod m20260309_205637_create_meetings;
-mod m20260309_210931_create_meeting_roles;
-mod m20260309_235225_create_attendances;
+mod m20260310_000844_create_events;
 
 pub struct Migrator;
 
@@ -16,9 +14,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20260308_183617_create_users::Migration),
             Box::new(m20260308_191852_create_organizations::Migration),
             Box::new(m20260308_211556_create_organization_members::Migration),
-            Box::new(m20260309_205637_create_meetings::Migration),
-            Box::new(m20260309_210931_create_meeting_roles::Migration),
-            Box::new(m20260309_235225_create_attendances::Migration),
+            Box::new(m20260310_000844_create_events::Migration),
         ]
     }
 }

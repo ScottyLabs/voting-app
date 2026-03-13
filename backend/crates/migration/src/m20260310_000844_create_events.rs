@@ -11,48 +11,41 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
-                    .table(Meeting::Table)
+                    .table(Event::Table)
                     .if_not_exists()
                     .col(
-                        ColumnDef::new(Meeting::Id)
+                        ColumnDef::new(Event::Id)
                             .integer()
                             .not_null()
                             .auto_increment()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(Meeting::RoomCode).string().not_null())
-                    .col(ColumnDef::new(Meeting::Status).string().not_null())
+                    .col(ColumnDef::new(Event::EventType).string().not_null())
+                    .col(ColumnDef::new(Event::Name).string().not_null())
+                    .col(ColumnDef::new(Event::Status).string().not_null())
                     .col(
-                        ColumnDef::new(Meeting::StartTime)
+                        ColumnDef::new(Event::StartTime)
                             .timestamp_with_time_zone()
                             .not_null(),
                     )
                     .col(
-                        ColumnDef::new(Meeting::EndTime)
+                        ColumnDef::new(Event::EndTime)
                             .timestamp_with_time_zone()
                             .not_null(),
                     )
-                    .col(
-                        ColumnDef::new(Meeting::CreatedAt)
-                            .timestamp_with_time_zone()
-                            .not_null()
-                            .default(Expr::current_timestamp()),
-                    )
-                    .col(
-                        ColumnDef::new(Meeting::CreatedByUserId)
-                            .integer()
-                            .not_null(),
-                    )
-                    .col(ColumnDef::new(Meeting::OrganizationId).integer().not_null())
+                    .col(ColumnDef::new(Event::Data).json_binary().not_null())
+                    .col(ColumnDef::new(Event::CreatedByUserId).integer().not_null())
+                    .col(ColumnDef::new(Event::OrganizationId).integer().not_null())
                     .foreign_key(
                         ForeignKey::create()
-                            .from(Meeting::Table, Meeting::CreatedByUserId)
+                            .from(Event::Table, Event::CreatedByUserId)
                             .to(User::Table, User::Id)
+                            // this may not be the correct methodology
                             .on_delete(ForeignKeyAction::Cascade),
                     )
                     .foreign_key(
                         ForeignKey::create()
-                            .from(Meeting::Table, Meeting::OrganizationId)
+                            .from(Event::Table, Event::OrganizationId)
                             .to(Organization::Table, Organization::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )
@@ -63,20 +56,21 @@ impl MigrationTrait for Migration {
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
-            .drop_table(Table::drop().table(Meeting::Table).to_owned())
+            .drop_table(Table::drop().table(Event::Table).to_owned())
             .await
     }
 }
 
 #[derive(DeriveIden)]
-pub enum Meeting {
+pub enum Event {
     Table,
     Id,
-    RoomCode,
+    EventType,
+    Name,
     Status,
     StartTime,
     EndTime,
-    CreatedAt,
+    Data,
     CreatedByUserId,
     OrganizationId,
 }
