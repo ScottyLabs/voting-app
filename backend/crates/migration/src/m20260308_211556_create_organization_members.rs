@@ -24,9 +24,15 @@ impl MigrationTrait for Migration {
                             .not_null(),
                     )
                     .col(
-                        ColumnDef::new(OrganizationMember::MemberState)
+                        ColumnDef::new(OrganizationMember::UserRole)
                             .string()
                             .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(OrganizationMember::JoinedAt)
+                            .timestamp_with_time_zone()
+                            .not_null()
+                            .default(Expr::current_timestamp()),
                     )
                     .primary_key(
                         Index::create()
@@ -65,5 +71,6 @@ pub enum OrganizationMember {
     Table,
     OrganizationId,
     UserId,
-    MemberState,
+    UserRole,
+    JoinedAt,
 }

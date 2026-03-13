@@ -19,12 +19,7 @@ impl MigrationTrait for Migration {
                             .primary_key(),
                     )
                     .col(ColumnDef::new(Organization::Name).string().not_null())
-                    .col(
-                        ColumnDef::new(Organization::Links)
-                            .array(ColumnType::String(StringLen::None))
-                            .not_null()
-                            .default(Expr::value(Vec::<String>::new())),
-                    )
+                    .col(ColumnDef::new(Organization::Data).json_binary().not_null())
                     .to_owned(),
             )
             .await
@@ -42,5 +37,5 @@ pub enum Organization {
     Table,
     Id,
     Name,
-    Links,
+    Data,
 }
