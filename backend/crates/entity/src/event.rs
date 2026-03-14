@@ -11,7 +11,7 @@ pub struct Model {
     pub name: String,
     pub status: String,
     pub start_time: DateTimeWithTimeZone,
-    pub end_time: DateTimeWithTimeZone,
+    pub end_time: Option<DateTimeWithTimeZone>,
     #[sea_orm(column_type = "JsonBinary")]
     pub data: Json,
     pub created_by_user_id: i32,
