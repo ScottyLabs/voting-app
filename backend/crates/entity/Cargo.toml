@@ -3,5 +3,15 @@ name = "entity"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+publish = false
+
+[lib]
+name = "entity"
+path = "src/lib.rs"
 
 [dependencies]
+tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread"]}
+
+[dependencies.sea-orm-entity]
+features = ["runtime-tokio-rustls", "sqlx-postgres"]
+version = "2.0.0-rc.36"
