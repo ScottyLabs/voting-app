@@ -221,7 +221,7 @@
 
         <label>
             <h3>Quorum:</h3>
-            <input type="text" bind:value={motion.threshold} required />
+            <input type="text" bind:value={motion.quorum} required />
         </label>
 
         <SelectMenu
