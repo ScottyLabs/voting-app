@@ -124,17 +124,6 @@
         margin: 0 0;
     }
 
-    .participant {
-        margin-top: 1em;
-        background-color: transparent;
-        color: black;
-        border: 1px;
-        border-color: black;
-        border-radius: 50%;
-        font-size: 5px;
-        padding: 10px 10px;
-        cursor: pointer;
-    }
     .quote {
         align-self: stretch;
         text-align: left;
@@ -168,13 +157,5 @@
         background: #e0e0e0;
 
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    }
-
-    .button-list {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.5rem;
-        list-style: none;
-        padding: 0;
     }
 </style>
