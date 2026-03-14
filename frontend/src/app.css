@@ -19,6 +19,7 @@
   --colors-backgroundDark: #252525;
 }
 
+
 a {
   font-weight: 500;
   color: #646cff;
@@ -43,7 +44,17 @@ h1 {
 }
 
 .card {
-  padding: 2em;
+  width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1em;
+
+  padding: 2rem;
+  border-radius: 12px;
+  background: #e0e0e0;
+
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 #app {

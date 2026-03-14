@@ -1,8 +1,8 @@
 <script lang="ts">
+    import WaitingPage from "./screens/waitingPage.svelte";
     import { slide } from "svelte/transition";
     import AuthPage from "./screens/authPage.svelte";
     import JoinPage from "./screens/joinPage.svelte";
-    import Voting from "./screens/voting.svelte";
     import VotingMotion from "./screens/votingMotion.svelte";
     import SessionCreation from "./screens/sessionCreation.svelte";
     import ResultsAdmin from "./screens/resultsAdmin.svelte";
@@ -43,16 +43,13 @@
 {:else if screen === "join"}
     <div transition:slide>
         <JoinPage
-            toVoter={() => (screen = "voting")}
+            toVoter={() => (screen = "waiting")}
             toAdmin={() => (screen = "SessionCreation")}
         />
     </div>
-{:else if screen === "voting"}
+{:else if screen === "waiting"}
     <div transition:slide>
-        <Voting
-            onNext={() => (screen = "votingMotion")}
-            onBack={() => (screen = "join")}
-        />
+        <WaitingPage onNext={() => (screen = "votingMotion")} />
     </div>
 {:else if screen === "votingMotion"}
     <div transition:slide>

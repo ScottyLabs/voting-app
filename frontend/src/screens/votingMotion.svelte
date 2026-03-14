@@ -8,6 +8,33 @@
         vote_type: string;
     }
 
+    interface User {
+        user_id: number;
+        name: string;
+        created_time: string;
+    }
+
+    let Users: User[] = [];
+
+    let user1: User = {
+        user_id: 67,
+        name: "Max Tentype",
+        created_time: "6767-67-67",
+    };
+    let user2: User = {
+        user_id: 420,
+        name: "Yiyoung Liu",
+        created_time: "4200-67-67",
+    };
+    let user3: User = {
+        user_id: 67,
+        name: "Anish Pallati",
+        created_time: "7676-67-67",
+    };
+    Users.push(user1);
+    Users.push(user2);
+    Users.push(user3);
+
     let ballot: Ballot = {
         name: "Ballot Name",
         start_time: "",
@@ -21,6 +48,11 @@
         event.preventDefault();
         onNext?.();
     }
+
+    let creatingMotion = false;
+    let creatingElection = false;
+
+    let meetingCode: string = "3CMU67";
 
     function handleClick() {
         onNext();
@@ -92,6 +124,17 @@
         margin: 0 0;
     }
 
+    .participant {
+        margin-top: 1em;
+        background-color: transparent;
+        color: black;
+        border: 1px;
+        border-color: black;
+        border-radius: 50%;
+        font-size: 5px;
+        padding: 10px 10px;
+        cursor: pointer;
+    }
     .quote {
         align-self: stretch;
         text-align: left;
@@ -125,5 +168,13 @@
         background: #e0e0e0;
 
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .button-list {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+        list-style: none;
+        padding: 0;
     }
 </style>
