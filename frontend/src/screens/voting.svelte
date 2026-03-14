@@ -1,5 +1,6 @@
 <script lang="ts">
-    let { onNext } = $props();
+    import backArr from "../lib/images/back_arrow.png";
+    let { onBack, onNext } = $props();
 
     interface Ballot {
         name: string;
@@ -15,9 +16,9 @@
         vote_type: "",
     };
 
-    let motion: string = $state("Motion description here");
+    let motion: string = $state("");
 
-    function vote(event: Event) {
+    function createBallot(event: Event) {
         event.preventDefault();
         onNext?.();
     }
@@ -29,23 +30,29 @@
 
 <main>
     <h1>CampusVoting</h1>
+
     <div class="card">
-        <h2>Vote on Current Motion</h2>
-        <hr />
-        <blockquote class="quote">{motion}</blockquote>
-        <form onsubmit={vote}>
+        <h2>{ballot.name}</h2>
+        <form onsubmit={createBallot}>
             <label>
-                <h3>Concerning this motion I vote...</h3>
-                <select bind:value={ballot.vote_type} required>
-                    <option value="" disabled>Select one...</option>
-                    {#each ["Pass", "Reject", "Abstain"] as option}
-                        <option value={option}>{option}</option>
-                    {/each}
-                </select>
+                <h3>Proposal:</h3>
+                <textarea
+                    bind:value={motion}
+                    oninput={(e) => {
+                        const el = e.target as HTMLTextAreaElement;
+                        el.style.height = "auto";
+                        el.style.height = el.scrollHeight + "px";
+                    }}
+                >
+                </textarea>
             </label>
-            <button type="submit" class="submitBtn">Submit Vote</button>
+
+            <button type="submit" class="submitBtn">Create Motion</button>
         </form>
     </div>
+    <button onclick={onBack} class="backBtn">
+        <img src={backArr} alt="Click me" />
+    </button>
 </main>
 
 <style>
@@ -61,45 +68,44 @@
 
     h3 {
         text-align: left;
-        color: black;
+        color: var(--colors-text);
         margin-bottom: 0.5em;
         font-weight: normal;
     }
 
     form {
-        margin-top: 0em;
         display: flex;
         flex-direction: column;
         width: 100%;
         gap: 1rem;
     }
 
-    select {
+    textarea {
         width: 100%;
-        height: 50px;
-        padding: 10px;
-        border-radius: 6px;
-        border: 1px solid #ccc;
-        box-sizing: border-box;
-        font-size: 20px;
-        margin-bottom: 0em;
+        min-height: 25px;
+        resize: vertical;
     }
 
-    hr {
-        width: 100%;
+    .backBtn {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+
+        width: 40px;
+        height: 40px;
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        padding: 0;
         border: none;
-        border-top: 1px solid #bdbdbd;
-        margin: 0 0;
+        background: none;
     }
 
-    .quote {
-        align-self: stretch;
-        text-align: left;
-        border-left: 4px solid var(--colors-primary);
-        padding-left: 12px;
-        margin: 1rem 0;
-        color: #555;
-        font-style: italic;
+    .backBtn img {
+        width: 24px;
+        height: 24px;
     }
 
     .submitBtn {
