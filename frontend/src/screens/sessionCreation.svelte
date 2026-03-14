@@ -139,6 +139,7 @@
     let creatingElection = $state(false);
     let inspectingUser = $state<User | null>(null);
     let inspectingAllUsers = $state(false);
+    let timerEnded = $state(false);
 
     let voteThresholds: string[] = ["Majority", "2/3", "3/4", "Unanimous"];
 
@@ -164,6 +165,7 @@
         creatingElection = false;
         creatingMotion = false;
         inspectingAllUsers = false;
+        timerEnded = false;
     }
 
     function inspectUser(user: User) {
@@ -175,7 +177,45 @@
         console.log("stopped inspecting");
         inspectingUser = null;
     }
+
+    function endTimer() {
+        timerEnded = true;
+    }
+
+    // TODO: after backend exists it can pass on live results to here
+    function getResults() {
+        return "TBD";
+    }
 </script>
+
+<Popup title="Results:" open={timerEnded} onClose={onPopupClose}>
+    <div>
+        {getResults()}
+    </div>
+    <hr style="margin-bottom: 0;" />
+    <h3 style="margin: 0;">Push Results?</h3>
+    <div
+        class="row"
+        style="justify-content: center; gap: 1rem; align-items: center;"
+    >
+        <button
+            type="button"
+            onclick={goNext}
+            class="btn"
+            style="padding: 10px 50px; margin:0"
+        >
+            Yes
+        </button>
+        <button
+            type="button"
+            onclick={onPopupClose}
+            class="btn"
+            style="padding: 10px 50px; margin: 0"
+        >
+            No
+        </button>
+    </div>
+</Popup>
 
 <Popup
     title="Participants (Headcount: {Users.length})"
@@ -311,7 +351,7 @@
             <button onclick={pushElection} class="btn">Push an Election</button>
         </div>
         <div class="row" style="marging-top=0em">
-            <button onclick={goNext} class="btn">END MEETING</button>
+            <button onclick={endTimer} class="btn">END MEETING</button>
             <button class="btn" style="padding: 10px 175px">EXPORT</button>
         </div>
     </div>
