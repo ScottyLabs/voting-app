@@ -21,7 +21,7 @@ impl MigrationTrait for Migration {
                             .primary_key(),
                     )
                     .col(ColumnDef::new(Voter::EventId).integer().not_null())
-                    .col(ColumnDef::new(Voter::UserId).integer().not_null())
+                    .col(ColumnDef::new(Voter::UserId).integer())
                     .col(ColumnDef::new(Voter::Data).json_binary().not_null())
                     .foreign_key(
                         ForeignKey::create()
