@@ -838,6 +838,9 @@ dependencies = [
 [[package]]
 name = "entity"
 version = "0.1.0"
+dependencies = [
+ "sea-orm 2.0.0-rc.36",
+]
 
 [[package]]
 name = "equivalent"

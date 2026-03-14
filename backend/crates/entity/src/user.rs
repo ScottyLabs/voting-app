@@ -17,8 +17,8 @@ pub enum Relation {
     Event,
     #[sea_orm(has_many = "super::organization_member::Entity")]
     OrganizationMember,
-    #[sea_orm(has_many = "super::voter::Entity")]
-    Voter,
+    #[sea_orm(has_many = "super::vote::Entity")]
+    Vote,
 }
 
 impl Related<super::event::Entity> for Entity {
@@ -33,9 +33,9 @@ impl Related<super::organization_member::Entity> for Entity {
     }
 }
 
-impl Related<super::voter::Entity> for Entity {
+impl Related<super::vote::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::Voter.def()
+        Relation::Vote.def()
     }
 }
 

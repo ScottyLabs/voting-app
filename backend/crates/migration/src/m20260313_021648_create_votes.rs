@@ -1,4 +1,5 @@
-use crate::m20260313_015106_create_voters::Voter;
+use crate::m20260308_183617_create_users::User;
+use crate::m20260310_000844_create_events::Event;
 use sea_orm_migration::prelude::*;
 
 #[derive(DeriveMigrationName)]
@@ -19,6 +20,7 @@ impl MigrationTrait for Migration {
                             .auto_increment()
                             .primary_key(),
                     )
+                    .col(ColumnDef::new(Vote::EventId).integer().not_null())
                     .col(ColumnDef::new(Vote::VoterId).integer().not_null())
                     .col(
                         ColumnDef::new(Vote::CastTime)
@@ -30,8 +32,14 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Vote::Data).json_binary().not_null())
                     .foreign_key(
                         ForeignKey::create()
+                            .from(Vote::Table, Vote::EventId)
+                            .to(Event::Table, Event::Id)
+                            .on_delete(ForeignKeyAction::Cascade),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
                             .from(Vote::Table, Vote::VoterId)
-                            .to(Voter::Table, Voter::Id)
+                            .to(User::Table, User::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )
                     .to_owned(),
@@ -50,6 +58,7 @@ impl MigrationTrait for Migration {
 pub enum Vote {
     Table,
     Id,
+    EventId,
     VoterId,
     CastTime,
     Proxy,

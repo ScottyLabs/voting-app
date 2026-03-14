@@ -4,7 +4,6 @@ mod m20260308_183617_create_users;
 mod m20260308_191852_create_organizations;
 mod m20260308_211556_create_organization_members;
 mod m20260310_000844_create_events;
-mod m20260313_015106_create_voters;
 mod m20260313_021648_create_votes;
 
 pub struct Migrator;
@@ -17,7 +16,6 @@ impl MigratorTrait for Migrator {
             Box::new(m20260308_191852_create_organizations::Migration),
             Box::new(m20260308_211556_create_organization_members::Migration),
             Box::new(m20260310_000844_create_events::Migration),
-            Box::new(m20260313_015106_create_voters::Migration),
             Box::new(m20260313_021648_create_votes::Migration),
         ]
     }
