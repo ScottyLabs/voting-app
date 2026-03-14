@@ -7,37 +7,6 @@
     import TimeScroller from "../lib/components/timeScroller.svelte";
     import HoverCard from "../lib/components/hoverCard.svelte";
     let { onNext, onBack } = $props();
-    interface User {
-        user_id: number;
-        name: string;
-        created_time: string;
-    }
-
-    interface Election {
-        title: string;
-        candidates: string[];
-        style: string;
-        timer: Time;
-    }
-
-    interface Time {
-        days: number;
-        hours: number;
-        mins: number;
-        secs: number;
-    }
-
-    interface Motion {
-        num: number;
-        description: string; // format: "YYYY-MM-DDTHH:MM"
-        threshold: string; // this ^
-        quorum: string;
-        style: string;
-        timer: Time;
-    }
-
-    // Placeholder values until finalization of what this entails
-    const voteTypeOptions = ["Type 1", "Type 2", "TenType"];
 
     function user_new(): User {
         return {
@@ -76,17 +45,6 @@
             },
         };
     }
-
-    let time: Time = $state({
-        days: 0,
-        hours: 0,
-        mins: 0,
-        secs: 10,
-    });
-
-    let motion: Motion = $state(motion_new());
-
-    let election: Election = $state(election_new());
 
     function goNext() {
         onNext?.();
@@ -135,6 +93,10 @@
         "Secret Vote",
     ];
 
+    let motion: Motion = $state(motion_new());
+    let election: Election = $state(election_new());
+
+    // Popup Booleans
     let creatingMotion = $state(false);
     let creatingElection = $state(false);
     let inspectingUser = $state<User | null>(null);

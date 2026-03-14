@@ -1,13 +1,6 @@
 <script lang="ts">
     let { onNext } = $props();
 
-    interface Ballot {
-        name: string;
-        start_time: string; // format: "YYYY-MM-DD"
-        end_time: string; // this ^
-        vote_type: string;
-    }
-
     let ballot: Ballot = {
         name: "Ballot Name",
         start_time: "",
