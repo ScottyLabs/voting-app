@@ -4,19 +4,20 @@
 
 The `vote.response` field stores the submitted voting payload for a single vote record.
 
-Structure
+**Structure**
 ```json
 {
   "vote_type": "motion",
   "vote_response": ["response1", "response2"]
 }
 ```
-- Field Definitions
-- vote_type: Specifies the type of vote represented by this response. Examples include "motion" and "election".
-- vote_response: Stores the participant’s submitted response as an array.
-- For a standard motion, this array typically contains a single value.
-- For a ranked-choice election, this array stores the ranked selections in order of preference.
-- In ranked voting, a lower array index indicates a higher preference. For example, index 0 represents the first choice, index 1 represents the second choice, and so on.
+
+**Field Definitions**
+- `vote_type`: Specifies the type of vote represented by this response. Examples include `"motion"` and `"election"`.
+- `vote_response`: Stores the participant’s submitted response as an array.
+  - For a standard motion, this array typically contains a single value.
+  - For a ranked-choice election, this array stores the ranked selections in order of preference.
+  - A lower array index indicates a higher preference (e.g., index `0` = first choice, index `1` = second choice).
 
 ---
 
@@ -25,7 +26,6 @@ Structure
 The `event.data` field stores event-specific configuration and metadata.
 
 Notes
-- Attendance should be represented as a dictionary mapping user.user_id to a boolean value.
 - For now, all users are treated as having the same role.
 
 Structure
@@ -33,10 +33,10 @@ Structure
 {
   "description": "event description goes here",
   "session_code": "code",
-  "vote_type": "motion or election",
+  "vote_type": "motion" | "election",
   "threshold": 0.75,
   "visibility": {
-    "participants": "hidden_until_release/live"
+    "participants": "hidden_until_release" | "live"
   },
   "proxy": true,
   "vote_options": ["option1", "option2"],
@@ -87,7 +87,7 @@ Structure
   "actor": {
     "user_id": 0,
     "role": "role string"
-  },
+  } | "system",
   "event_id": 0,
   "changes": {
     "before": {},
