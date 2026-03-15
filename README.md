@@ -16,9 +16,28 @@ For detailed setup instructions, such as configuring your development, see CONTR
 **Quick setup:**
 1. Install Bun and Docker (see links above)
 
-### Running
+### Starting the backend
+```bash
+# 1. Go to backend folder
+cd backend
+
+# 2. Start Docker
+docker compose up -d
+
+# 3. Go into voting-app folder
+cd crates/voting-app
+
+# 3. Start the backend
+cargo run
+
+# 4. Later, to quit docker, go to the backend folder and run
+docker compose down
+```
+
+### Starting the frontend
 ```bash
 # 1. Go to frontend folder
+cd frontend
 
 # 2. Install dependencies
 bun install
