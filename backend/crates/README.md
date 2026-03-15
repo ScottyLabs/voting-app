@@ -1,10 +1,10 @@
 # Database Information
 
-## `vote.response` (JSON)
+#### `vote.response` (JSON)
 
 The `vote.response` field stores the submitted voting payload for a single vote record.
 
-### Structure
+Structure
 ```json
 {
   "vote_type": "motion",
@@ -18,11 +18,11 @@ The `vote.response` field stores the submitted voting payload for a single vote 
 - For a ranked-choice election, this array stores the ranked selections in order of preference.
 - In ranked voting, a lower array index indicates a higher preference. For example, index 0 represents the first choice, index 1 represents the second choice, and so on.
 
-⸻
+---
 
-event.data (JSON)
+#### `event.data` (JSON)
 
-The event.data field stores event-specific configuration and metadata.
+The `event.data` field stores event-specific configuration and metadata.
 
 Notes
 - Attendance should be represented as a dictionary mapping user.user_id to a boolean value.
@@ -39,7 +39,12 @@ Structure
     "participants": "hidden_until_release/live"
   },
   "proxy": true,
-  "vote_options": ["option1", "option2"]
+  "vote_options": ["option1", "option2"],
+  "attendnace" : {
+    "0000": true,
+    "1111": false,
+    "2222": true
+  }
 }
 ```
 Field Definitions
@@ -52,26 +57,14 @@ Field Definitions
 	- live
 - proxy: Indicates whether proxy voting is enabled for the event.
 - vote_options: Lists the selectable voting options for the event.
+- attendance: dictionary with user.user_id, boolean pair
 
-Attendance Representation
 
-Example attendance dictionary:
-```json
-{
-  "0000": true,
-  "1111": false,
-  "2222": true
-}
-```
-In this representation:
-- the key is user.user_id
-- the value is a boolean indicating whether the user is marked present
+---
 
-⸻
+#### `organization.data` (JSON)
 
-organization.data (JSON)
-
-The organization.data field stores organization-level metadata.
+The `organization.data` field stores organization-level metadata.
 
 Structure
 ```json
@@ -82,11 +75,11 @@ Structure
 Field Definitions
 - description: A textual description of the organization.
 
-⸻
+---
 
-log.data (JSON)
+#### `log.data` (JSON)
 
-The log.data field stores audit log information for system actions.
+The `log.data` field stores audit log information for system actions.
 
 Structure
 ```json
@@ -108,15 +101,15 @@ Structure
 }
 ```
 Field Definitions
-	•	action: A description of the action being logged.
-	•	target: Identifies the record affected by the action.
-	•	table: The name of the affected table.
-	•	id: The primary key of the affected record.
-	•	actor: Identifies the user responsible for the action.
-	•	user_id: The ID of the acting user.
-	•	role: The role of the acting user.
-	•	event_id: The related event identifier, if applicable.
-	•	changes: Stores the state transition caused by the action.
-	•	before: The state before the change.
-	•	after: The state after the change.
+- action: A description of the action being logged.
+- target: Identifies the record affected by the action.
+- table: The name of the affected table.
+- id: The primary key of the affected record.
+- actor: Identifies the user responsible for the action.
+- user_id: The ID of the acting user.
+- role: The role of the acting user.
+- event_id: The related event identifier, if applicable.
+- changes: Stores the state transition caused by the action.
+- before: The state before the change.
+- after: The state after the change.
 
