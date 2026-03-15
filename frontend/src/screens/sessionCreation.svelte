@@ -249,7 +249,7 @@
             <input type="text" bind:value={election.title} required />
         </label>
 
-        <ArrayEditor title="Candidates" items={election.candidates}
+        <ArrayEditor title="Candidates" bind:items={election.candidates}
         ></ArrayEditor>
 
         <SelectMenu
@@ -258,7 +258,7 @@
             options={electionStyleOptions}
         ></SelectMenu>
 
-        <TimeScroller value={election.timer}></TimeScroller>
+        <TimeScroller bind:value={election.timer}></TimeScroller>
 
         <button type="submit" class="submitBtn">Push Election</button>
     </form>
