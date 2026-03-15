@@ -40,11 +40,6 @@ Structure
   },
   "proxy": true,
   "vote_options": ["option1", "option2"],
-  "attendnace" : {
-    "0000": true,
-    "1111": false,
-    "2222": true
-  }
 }
 ```
 Field Definitions
@@ -57,7 +52,7 @@ Field Definitions
 	- live
 - proxy: Indicates whether proxy voting is enabled for the event.
 - vote_options: Lists the selectable voting options for the event.
-- attendance: dictionary with user.user_id, boolean pair
+
 
 
 ---
