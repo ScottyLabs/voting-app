@@ -254,7 +254,7 @@
 
         <SelectMenu
             title="Election Style:"
-            value={election.style}
+            bind:value={election.style}
             options={electionStyleOptions}
         ></SelectMenu>
 
