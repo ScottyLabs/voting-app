@@ -215,7 +215,7 @@
     <form onsubmit={onPopupClose}>
         <LongTextInput
             title="Description:"
-            value={motion.description}
+            bind:value={motion.description}
             emptyPlaceholder="Input Description"
         ></LongTextInput>
 
@@ -226,13 +226,13 @@
 
         <SelectMenu
             title="Threshold:"
-            value={motion.threshold}
+            bind:value={motion.threshold}
             options={voteThresholds}
         ></SelectMenu>
 
         <SelectMenu
             title="Voting Style:"
-            value={motion.style}
+            bind:value={motion.style}
             options={voteStyleOptions}
         ></SelectMenu>
 

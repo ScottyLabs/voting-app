@@ -1,5 +1,5 @@
 <script lang="ts">
-    let { title = "Popup", value, emptyPlaceholder } = $props();
+    let { title = "Popup", value = $bindable(), emptyPlaceholder } = $props();
 </script>
 
 <main>
