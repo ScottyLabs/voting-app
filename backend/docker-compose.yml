@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: slabs
+      POSTGRES_PASSWORD: slabs
+      POSTGRES_DB: voting_app
+    ports:
+      - "8181:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U slabs -d voting_app"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
