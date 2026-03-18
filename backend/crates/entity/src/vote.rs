@@ -7,6 +7,7 @@ use sea_orm::entity::prelude::*;
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
+    pub event_id: i32,
     pub voter_id: i32,
     pub cast_time: DateTimeWithTimeZone,
     pub proxy: bool,
@@ -17,18 +18,32 @@ pub struct Model {
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(
-        belongs_to = "super::voter::Entity",
-        from = "Column::VoterId",
-        to = "super::voter::Column::Id",
+        belongs_to = "super::event::Entity",
+        from = "Column::EventId",
+        to = "super::event::Column::Id",
         on_update = "NoAction",
         on_delete = "Cascade"
     )]
-    Voter,
+    Event,
+    #[sea_orm(
+        belongs_to = "super::user::Entity",
+        from = "Column::VoterId",
+        to = "super::user::Column::Id",
+        on_update = "NoAction",
+        on_delete = "Cascade"
+    )]
+    User,
 }
 
-impl Related<super::voter::Entity> for Entity {
+impl Related<super::event::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::Voter.def()
+        Relation::Event.def()
+    }
+}
+
+impl Related<super::user::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::User.def()
     }
 }
 

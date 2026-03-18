@@ -28,11 +28,7 @@ impl MigrationTrait for Migration {
                             .timestamp_with_time_zone()
                             .not_null(),
                     )
-                    .col(
-                        ColumnDef::new(Event::EndTime)
-                            .timestamp_with_time_zone()
-                            .not_null(),
-                    )
+                    .col(ColumnDef::new(Event::EndTime).timestamp_with_time_zone())
                     .col(ColumnDef::new(Event::Data).json_binary().not_null())
                     .col(ColumnDef::new(Event::CreatedByUserId).integer().not_null())
                     .col(ColumnDef::new(Event::OrganizationId).integer().not_null())

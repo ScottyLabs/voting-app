@@ -1,7 +1,7 @@
 <script lang="ts">
     let { onNext } = $props();
 
-    // Percent values
+    // Percent values (TO BE CONNECTED TO API)
     let percentAbst: number = 10;
     let percentYay: number = 60;
     let percentNay: number = 100 - percentYay - percentAbst;

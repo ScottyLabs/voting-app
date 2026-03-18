@@ -841,7 +841,7 @@ dependencies = [
 name = "entity"
 version = "0.1.0"
 dependencies = [
- "sea-orm",
+ "sea-orm 2.0.0-rc.36",
 ]
 
 [[package]]
