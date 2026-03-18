@@ -5,4 +5,5 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+entity = { version = "0.1.0", path = "../entity"}
 sea-orm = "=2.0.0-rc.37"
