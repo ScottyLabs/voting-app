@@ -34,6 +34,8 @@ Next, to set up the PostgreSQL database inside of Docker,
 
 You should see a message similar to `Container backend-db-1 Started`.
 
+
+
 To start the backend, navigate to the crate which holds the main files with
 
 ```cd crates/voting-app```
@@ -41,6 +43,8 @@ To start the backend, navigate to the crate which holds the main files with
 Now, build and run the backend with
 
 ```backend/crates/voting-app $ cargo run```
+
+
 
 Eventually (probably not now), you may want to stop Docker. Run (in the backend folder)
 
