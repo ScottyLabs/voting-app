@@ -2,6 +2,7 @@ pub mod events;
 pub mod organization_members;
 pub mod organizations;
 pub mod users;
+pub mod votes;
 
 use sea_orm::DatabaseConnection;
 
@@ -32,5 +33,9 @@ impl Store {
 
     pub fn events(&self) -> events::EventRepository<'_> {
         events::EventRepository::new(&self.db)
+    }
+
+    pub fn votes(&self) -> votes::VoteRepository<'_> {
+        votes::VoteRepository::new(&self.db)
     }
 }
