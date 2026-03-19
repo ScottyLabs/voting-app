@@ -5,19 +5,30 @@ use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, LoaderTrait, QueryFi
 use chrono::{DateTime, FixedOffset};
 use serde_json::Value as Json;
 
+//Struct for exporting vote.
+struct VoteResult {
+    user_id: i32,
+    user_name: String,
+    vote_timestamp: DateTime<FixedOffset>, 
+    vote_response: Vec<String>, //parsed from vote.data (JSON)
+}
+
 struct EventLoad {
     event_id: i32,
     event_type: String,
     name: String,
-    start_time: DateTime<FixedOffset>,
-    end_time: Option<DateTime<FixedOffset>>,
-    data: Json,
+    start_time: DateTime<FixedOffset>, //timestamp with timezone
+    end_time: Option<DateTime<FixedOffset>>, //nullable timestamp
+    data: Json, //raw JSON blob
     created_by_user_id: i32,
     organization_id: i32,
-    votes_with_user: Vec<(vote::Model, Option<user::Model>)>,
+    votes_with_user: Vec<(vote::Model, Option<user::Model>)>, 
+    // list of tuples. Each vote paired with its user. 
+    //For now, user might be Null
 }
 
 impl EventLoad {
+    //EventLoad constructor. return SOME(EventLoad) for sc, NONE for fc
     async fn new(event_id: i32, db: &DatabaseConnection) -> Option<Self> {
         let event = Event::find_by_id(event_id).one(db).await.ok()??;
 
@@ -52,6 +63,30 @@ impl EventLoad {
         self.votes_with_user
             .iter()
             .filter_map(|(_, user)| user.as_ref())
+            .collect()
+    }
+
+    //equiv to get_attendance. 
+    //return vector containing VoteResult struct
+    fn get_event_result(&self) -> Vec<VoteResult> {
+        self.votes_with_user
+            .iter()
+            .filter_map(|(vote, user)| { //vote : vote::Model, user : Option<user::Model>
+                let user = user.as_ref()?;
+                let vote_response = vote.data
+                    .get("vote_response")?
+                    .as_array()?
+                    .iter()
+                    .filter_map(|v| v.as_str().map(|s| s.to_owned()))
+                    .collect();
+
+                Some(VoteResult {
+                    user_id: user.id,
+                    user_name: user.name.clone(),
+                    vote_timestamp: vote.cast_time,
+                    vote_response,
+                })
+            })
             .collect()
     }
 }
