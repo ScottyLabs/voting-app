@@ -1,3 +1,4 @@
+pub mod organization_members;
 pub mod organizations;
 pub mod users;
 
@@ -22,5 +23,9 @@ impl Store {
 
     pub fn organizations(&self) -> organizations::OrganizationRepository<'_> {
         organizations::OrganizationRepository::new(&self.db)
+    }
+
+    pub fn organization_members(&self) -> organization_members::OrganizationMemberRepository<'_> {
+        organization_members::OrganizationMemberRepository::new(&self.db)
     }
 }
