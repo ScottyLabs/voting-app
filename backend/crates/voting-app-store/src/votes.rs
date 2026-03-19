@@ -14,6 +14,13 @@ impl<'a> VoteRepository<'a> {
         Vote::find_by_id(id).one(self.db).await
     }
 
+    pub async fn find_by_event_id(&self, id: i32) -> Result<Vec<vote::Model>, DbErr> {
+        Vote::find()
+            .filter(vote::Column::EventId.eq(id))
+            .all(self.db)
+            .await
+    }
+
     pub async fn create(&self, vote: vote::ActiveModel) -> Result<vote::Model, DbErr> {
         vote.insert(self.db).await
     }
