@@ -25,28 +25,38 @@ Run `git clone https://github.com/ScottyLabs/voting-app.git` in your favorite (o
 
 #### Backend
 To start the backend, first navigate with
+
 ```cd backend```
 
 Next, to set up the PostgreSQL database inside of Docker,
+
 ```backend $ docker compose up -d```
 
 You should see a message similar to `Container backend-db-1 Started`.
 
 To start the backend, navigate to the crate which holds the main files with
+
 ```cd crates/voting-app```
 
 Now, build and run the backend with
+
 ```backend/crates/voting-app $ cargo run```
 
 Eventually (probably not now), you may want to stop Docker. Run (in the backend folder)
+
 ```backend $ docker compose down```
 
 #### Frontend
 Now that your backend is running, we can set up the frontend. Navigate to the frontend folder. You will probably need another terminal instance, because you need both running at the same time. Navigate with
+
 ```cd frontend```
 
 We want to install the proper dependencies for the frontend. Run
+
 ```frontend $ bun install```
+
 followed by
+
 ```frontend $ bun run dev```
+
 to start up the frontend.
