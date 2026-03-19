@@ -24,7 +24,7 @@ For detailed setup instructions, see CONTRIBUTING.md.
 
 Install Bun, Cargo, and Docker (see links above).
 
-### Starting the backend
+#### Starting the backend
 ```bash
 # Start Docker
 backend $ docker compose up -d
@@ -36,7 +36,7 @@ backend/crates/voting-app $ cargo run
 backend $ docker compose down
 ```
 
-### Starting the frontend
+#### Starting the frontend
 
 ```bash
 # Install dependencies
