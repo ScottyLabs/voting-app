@@ -11,7 +11,7 @@ The `vote.data` field stores the submitted voting payload for a single vote reco
 
 ### Type Definition
 ```typescript
-type VoteResponse = {
+type VoteData = {
   vote_type: string,
   vote_response: string[]
 }
