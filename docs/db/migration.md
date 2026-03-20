@@ -1,5 +1,7 @@
 # Running Migrator CLI
 
+Do not use this. I will edit this documentation eventually™. Instead, use `cargo run` in the `voting-app` crate.
+
 - Generate a new migration file
     ```sh
     cargo run -- generate MIGRATION_NAME
