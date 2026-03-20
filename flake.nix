@@ -2,13 +2,9 @@
   description = "Voting App";
 
   nixConfig = {
-    extra-substituters = [
-      "https://scottylabs.cachix.org"
-      "https://nix-community.cachix.org"
-    ];
+    extra-substituters = [ "https://scottylabs.cachix.org" ];
     extra-trusted-public-keys = [
       "scottylabs.cachix.org-1:hajjEX5SLi/Y7yYloiXTt2IOr3towcTGRhMh1vu6Tjg="
-      "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
     ];
   };
 
@@ -25,10 +21,7 @@
     let
       supportedSystems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
-      pkgsFor = system: import nixpkgs {
-        inherit system;
-        overlays = [ bun2nix.overlays.default ];
-      };
+      pkgsFor = system: nixpkgs.legacyPackages.${system};
     in
     {
       packages = forAllSystems (system:
@@ -40,16 +33,14 @@
         }
         // (nixpkgs.lib.optionalAttrs (system == "x86_64-linux") (
           let
-            votingAppFrontend = pkgs.stdenv.mkDerivation {
+            b2n = bun2nix.packages.${system}.default;
+
+            votingAppFrontend = b2n.mkDerivation {
               pname = "voting-app-frontend";
               version = (builtins.fromJSON (builtins.readFile ./frontend/package.json)).version;
               src = ./frontend;
 
-              nativeBuildInputs = [
-                pkgs.bun2nix.hook
-              ];
-
-              bunDeps = pkgs.bun2nix.fetchBunDeps {
+              bunDeps = b2n.fetchBunDeps {
                 bunNix = ./frontend/bun.nix;
               };
 
