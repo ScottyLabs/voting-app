@@ -1,5 +1,10 @@
 # JSON Information
 
+* [vote.data](db-json#vote.data)
+* [event.data](db-json#event.data)
+* [organization.data](db-json#organization.data)
+* [log.data](db-json#log.data)
+
 ## `vote.data`
 
 The `vote.data` field stores the submitted voting payload for a single vote record.
