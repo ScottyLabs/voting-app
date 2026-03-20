@@ -364,6 +364,48 @@ mod tests {
     }
 
     #[test]
+    fn test_export_result_json() {
+        let votes = vec![
+            (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
+            (mock_vote(2, 1, 2, vec!["yes"]), Some(mock_user(2, "Bob"))),
+            (mock_vote(3, 1, 3, vec!["no"]),  Some(mock_user(3, "Carol"))),
+        ];
+        let event = mock_event(votes);
+        let result = event.export_result_json();
+
+        assert_eq!(result["event_name"], "Test Event");
+        assert_eq!(result["vote_type"], "motion");
+        assert_eq!(result["status"], "closed");
+        assert_eq!(result["total_votes"], 3);
+        assert!(result["end_time"].is_null());
+        assert_eq!(result["statistics"]["yes"], 2);
+        assert_eq!(result["statistics"]["no"], 1);
+    }
+
+    #[test]
+    fn test_export_result_json_empty() {
+        let event = mock_event(vec![]);
+        let result = event.export_result_json();
+
+        assert_eq!(result["event_name"], "Test Event");
+        assert_eq!(result["total_votes"], 0);
+        assert!(result["statistics"].as_object().unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_export_result_json_with_end_time() {
+        let mut event = mock_event(vec![
+            (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
+        ]);
+        event.end_time = Some(chrono::Utc::now().fixed_offset());
+        let result = event.export_result_json();
+
+        assert!(!result["end_time"].is_null());
+        // end_time should be an RFC3339 string
+        assert!(result["end_time"].as_str().is_some());
+    }
+
+    #[test]
     #[ignore = "requires LiberationSans font files in ./fonts directory"]
     fn test_export_result_pdf_returns_bytes() {
         let votes = vec![
