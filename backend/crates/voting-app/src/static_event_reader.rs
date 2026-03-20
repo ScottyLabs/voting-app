@@ -1,6 +1,6 @@
-//I don't know the exact pipeline for attendance view, so for now it will just support static view.
-//later, we can add more statistics for result. In that case, this maybe more uesfull
-use entity::event::{self, Entity as Event};
+  // Loads event + votes into memory once. Useful for repeated reads (export, statistics)
+  // without re-querying the DB. Consider caching for closed events.
+use entity::event::Entity as Event;
 use entity::user::{self, Entity as User};
 use entity::vote::{self, Entity as Vote};
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, LoaderTrait, QueryFilter};
@@ -33,6 +33,7 @@ struct EventData {
     vote_options: Vec<String>,
 }
 
+//EventTable struct
 struct EventLoadStatic {
     event_id: i32,
     event_type: String,
@@ -47,6 +48,7 @@ struct EventLoadStatic {
     // list of tuples. Each vote paired with its user.
     //For now, user might be Null
 }
+
 
 impl EventLoadStatic {
     //EventLoadStatic constructor. return SOME(EventLoadStatic) for sc, NONE for fc
