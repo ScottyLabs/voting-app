@@ -22,7 +22,7 @@ struct User {
 struct Organization {
   id: i32,
   name: string,
-  data: JSON
+  data: Json
 }
 ```
 
