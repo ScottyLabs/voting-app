@@ -1,9 +1,9 @@
 # JSON Information
 
-* [vote.data](db-json#vote.data)
-* [event.data](db-json#event.data)
-* [organization.data](db-json#organization.data)
-* [log.data](db-json#log.data)
+* [vote.data](db-json.md#votedata)
+* [event.data](db-json.md#eventdata)
+* [organization.data](db-json.md#organizationdata)
+* [log.data](db-json.md#logdata)
 
 ## `vote.data`
 

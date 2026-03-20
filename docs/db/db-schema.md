@@ -1,10 +1,10 @@
 # Schema Information
 
-* [Users](db-schema#users)
-* [Organizations](db-schema#organizations)
-* [Organization Members](db-schema#organization-members)
-* [Events](db-schema#events)
-* [Votes](db-schema#votes)
+* [Users](db-schema.md#users)
+* [Organizations](db-schema.md#organizations)
+* [Organization Members](db-schema.md#organization-members)
+* [Events](db-schema.md#events)
+* [Votes](db-schema.md#votes)
 
 ## Users
 
