@@ -1,3 +1,5 @@
+mod static_event_reader;
+
 use dotenvy::dotenv;
 use migration::{Migrator, MigratorTrait};
 use sea_orm_migration::DbErr;
