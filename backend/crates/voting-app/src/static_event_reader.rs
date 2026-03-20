@@ -1,13 +1,13 @@
-  // Loads event + votes into memory once. Useful for repeated reads (export, statistics)
-  // without re-querying the DB. Consider caching for closed events.
+// Loads event + votes into memory once. Useful for repeated reads (export, statistics)
+// without re-querying the DB. Consider caching for closed events.
+use chrono::{DateTime, FixedOffset};
 use entity::event::Entity as Event;
 use entity::user::{self, Entity as User};
 use entity::vote::{self, Entity as Vote};
+use genpdf::elements::FrameCellDecorator;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, LoaderTrait, QueryFilter};
-use chrono::{DateTime, FixedOffset};
 use serde::Deserialize;
 use std::collections::HashMap;
-use genpdf::elements::FrameCellDecorator;
 //Struct for exporting vote.
 struct VoteResult {
     user_id: i32,
@@ -26,8 +26,8 @@ struct Visibility {
 struct EventData {
     description: String,
     session_code: String,
-    vote_type: String,          // "motion" | "election"
-    threshold: f64,             // approval threshold e.g. 0.75 = 75%
+    vote_type: String, // "motion" | "election"
+    threshold: f64,    // approval threshold e.g. 0.75 = 75%
     visibility: Visibility,
     proxy: bool,
     vote_options: Vec<String>,
@@ -39,16 +39,15 @@ struct EventLoadStatic {
     event_type: String,
     name: String,
     status: String,
-    start_time: DateTime<FixedOffset>,          //timestamp with timezone
-    end_time: Option<DateTime<FixedOffset>>,    //nullable timestamp
-    data: EventData,                            //parsed event.data JSON
+    start_time: DateTime<FixedOffset>, //timestamp with timezone
+    end_time: Option<DateTime<FixedOffset>>, //nullable timestamp
+    data: EventData,                   //parsed event.data JSON
     created_by_user_id: i32,
     organization_id: i32,
     votes_with_user: Vec<(vote::Model, Option<user::Model>)>,
     // list of tuples. Each vote paired with its user.
     //For now, user might be Null
 }
-
 
 impl EventLoadStatic {
     //EventLoadStatic constructor. return SOME(EventLoadStatic) for sc, NONE for fc
@@ -90,14 +89,16 @@ impl EventLoadStatic {
             .collect()
     }
 
-    //equiv to get_attendance. 
+    //equiv to get_attendance.
     //return vector containing VoteResult struct
     fn get_event_result(&self) -> Vec<VoteResult> {
         self.votes_with_user
             .iter()
-            .filter_map(|(vote, user)| { //vote : vote::Model, user : Option<user::Model>
+            .filter_map(|(vote, user)| {
+                //vote : vote::Model, user : Option<user::Model>
                 let user = user.as_ref()?;
-                let vote_response = vote.data
+                let vote_response = vote
+                    .data
                     .get("vote_response")?
                     .as_array()?
                     .iter()
@@ -113,7 +114,7 @@ impl EventLoadStatic {
             })
             .collect()
     }
-    
+
     // returns HashMap of response -> count
     // e.g. {"yes": 10, "no": 5}
     fn get_vote_statistics(&self) -> HashMap<String, usize> {
@@ -126,27 +127,35 @@ impl EventLoadStatic {
         counts
     }
 
-    //return val: raw PDF bytes. caller should handle this 
+    //return val: raw PDF bytes. caller should handle this
     //(idealy just shot it to frontend and let it streamed
     fn export_result_pdf(&self) -> Vec<u8> {
         let font_dir = concat!(env!("CARGO_MANIFEST_DIR"), "/fonts");
         let font_family = genpdf::fonts::FontFamily {
             regular: genpdf::fonts::FontData::new(
-                std::fs::read(format!("{}/liberation-sans.regular.ttf", font_dir)).expect("Failed to read regular font"),
+                std::fs::read(format!("{}/liberation-sans.regular.ttf", font_dir))
+                    .expect("Failed to read regular font"),
                 None,
-            ).expect("Failed to load regular font"),
+            )
+            .expect("Failed to load regular font"),
             bold: genpdf::fonts::FontData::new(
-                std::fs::read(format!("{}/liberation-sans.bold.ttf", font_dir)).expect("Failed to read bold font"),
+                std::fs::read(format!("{}/liberation-sans.bold.ttf", font_dir))
+                    .expect("Failed to read bold font"),
                 None,
-            ).expect("Failed to load bold font"),
+            )
+            .expect("Failed to load bold font"),
             italic: genpdf::fonts::FontData::new(
-                std::fs::read(format!("{}/liberation-sans.italic.ttf", font_dir)).expect("Failed to read italic font"),
+                std::fs::read(format!("{}/liberation-sans.italic.ttf", font_dir))
+                    .expect("Failed to read italic font"),
                 None,
-            ).expect("Failed to load italic font"),
+            )
+            .expect("Failed to load italic font"),
             bold_italic: genpdf::fonts::FontData::new(
-                std::fs::read(format!("{}/liberation-sans.bold-italic.ttf", font_dir)).expect("Failed to read bold-italic font"),
+                std::fs::read(format!("{}/liberation-sans.bold-italic.ttf", font_dir))
+                    .expect("Failed to read bold-italic font"),
                 None,
-            ).expect("Failed to load bold-italic font"),
+            )
+            .expect("Failed to load bold-italic font"),
         };
         let mut doc = genpdf::Document::new(font_family);
         doc.set_title(format!("Event Result: {}", self.name));
@@ -198,7 +207,10 @@ impl EventLoadStatic {
 
         // table rows
         for result in self.get_event_result() {
-            let timestamp = result.vote_timestamp.format("%Y-%m-%d %H:%M:%S").to_string();
+            let timestamp = result
+                .vote_timestamp
+                .format("%Y-%m-%d %H:%M:%S")
+                .to_string();
             let mut row = table.row();
             row.push_element(cell(&result.user_id.to_string()));
             row.push_element(cell(&result.user_name));
@@ -215,11 +227,11 @@ impl EventLoadStatic {
     }
 
     //for frontent
-    fn export_result_json(&self) -> serde_json::Value{
+    fn export_result_json(&self) -> serde_json::Value {
         let statistics: serde_json::Map<String, serde_json::Value> = self
             .get_vote_statistics()
             .into_iter()
-            .map(|(k,v)| (k, serde_json::Value::from(v)))
+            .map(|(k, v)| (k, serde_json::Value::from(v)))
             .collect();
 
         serde_json::json!({
@@ -231,9 +243,7 @@ impl EventLoadStatic {
             "statistics": statistics
         })
     }
-    
 }
-
 
 //test cases are 100% AI generated. Cannot garuntee safety.
 //run cargo test -- --ignored --nocapture && open /tmp/test_event_result.pdf to preview pdf formatting.
@@ -299,7 +309,7 @@ mod tests {
     fn test_vote_count() {
         let votes = vec![
             (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
-            (mock_vote(2, 1, 2, vec!["no"]),  Some(mock_user(2, "Bob"))),
+            (mock_vote(2, 1, 2, vec!["no"]), Some(mock_user(2, "Bob"))),
         ];
         let event = mock_event(votes);
         assert_eq!(event.vote_count(), 2);
@@ -309,7 +319,7 @@ mod tests {
     fn test_get_voters() {
         let votes = vec![
             (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
-            (mock_vote(2, 1, 2, vec!["no"]),  None), // no user
+            (mock_vote(2, 1, 2, vec!["no"]), None), // no user
         ];
         let event = mock_event(votes);
         let voters = event.get_voters();
@@ -321,7 +331,7 @@ mod tests {
     fn test_get_event_result() {
         let votes = vec![
             (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
-            (mock_vote(2, 1, 2, vec!["no"]),  Some(mock_user(2, "Bob"))),
+            (mock_vote(2, 1, 2, vec!["no"]), Some(mock_user(2, "Bob"))),
         ];
         let event = mock_event(votes);
         let results = event.get_event_result();
@@ -337,7 +347,7 @@ mod tests {
     fn test_get_event_result_skips_missing_user() {
         let votes = vec![
             (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
-            (mock_vote(2, 1, 2, vec!["no"]),  None), // skipped
+            (mock_vote(2, 1, 2, vec!["no"]), None), // skipped
         ];
         let event = mock_event(votes);
         let results = event.get_event_result();
@@ -349,13 +359,13 @@ mod tests {
         let votes = vec![
             (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
             (mock_vote(2, 1, 2, vec!["yes"]), Some(mock_user(2, "Bob"))),
-            (mock_vote(3, 1, 3, vec!["no"]),  Some(mock_user(3, "Carol"))),
+            (mock_vote(3, 1, 3, vec!["no"]), Some(mock_user(3, "Carol"))),
         ];
         let event = mock_event(votes);
         let stats = event.get_vote_statistics();
 
         assert_eq!(stats.get("yes"), Some(&2));
-        assert_eq!(stats.get("no"),  Some(&1));
+        assert_eq!(stats.get("no"), Some(&1));
     }
 
     #[test]
@@ -370,7 +380,7 @@ mod tests {
         let votes = vec![
             (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
             (mock_vote(2, 1, 2, vec!["yes"]), Some(mock_user(2, "Bob"))),
-            (mock_vote(3, 1, 3, vec!["no"]),  Some(mock_user(3, "Carol"))),
+            (mock_vote(3, 1, 3, vec!["no"]), Some(mock_user(3, "Carol"))),
         ];
         let event = mock_event(votes);
         let result = event.export_result_json();
@@ -396,9 +406,10 @@ mod tests {
 
     #[test]
     fn test_export_result_json_with_end_time() {
-        let mut event = mock_event(vec![
-            (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
-        ]);
+        let mut event = mock_event(vec![(
+            mock_vote(1, 1, 1, vec!["yes"]),
+            Some(mock_user(1, "Alice")),
+        )]);
         event.end_time = Some(chrono::Utc::now().fixed_offset());
         let result = event.export_result_json();
 
@@ -412,7 +423,7 @@ mod tests {
     fn test_export_result_pdf_returns_bytes() {
         let votes = vec![
             (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
-            (mock_vote(2, 1, 2, vec!["no"]),  Some(mock_user(2, "Bob"))),
+            (mock_vote(2, 1, 2, vec!["no"]), Some(mock_user(2, "Bob"))),
         ];
         let event = mock_event(votes);
         let bytes = event.export_result_pdf();
@@ -435,7 +446,7 @@ mod tests {
     fn test_export_result_pdf_saves_to_file() {
         let votes = vec![
             (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
-            (mock_vote(2, 1, 2, vec!["no"]),  Some(mock_user(2, "Bob"))),
+            (mock_vote(2, 1, 2, vec!["no"]), Some(mock_user(2, "Bob"))),
         ];
         let event = mock_event(votes);
         let bytes = event.export_result_pdf();
@@ -454,12 +465,17 @@ mod tests {
         // small event — 2 votes
         let votes_small = vec![
             (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
-            (mock_vote(2, 1, 2, vec!["no"]),  Some(mock_user(2, "Bob"))),
+            (mock_vote(2, 1, 2, vec!["no"]), Some(mock_user(2, "Bob"))),
         ];
 
         // large event — 100 votes
         let votes_large: Vec<_> = (1..=100)
-            .map(|i| (mock_vote(i, 1, i, vec!["yes"]), Some(mock_user(i, &format!("User{}", i)))))
+            .map(|i| {
+                (
+                    mock_vote(i, 1, i, vec!["yes"]),
+                    Some(mock_user(i, &format!("User{}", i))),
+                )
+            })
             .collect();
 
         let event_small = mock_event(votes_small);
@@ -479,20 +495,45 @@ mod tests {
         let font_dir = concat!(env!("CARGO_MANIFEST_DIR"), "/fonts");
         let start = std::time::Instant::now();
         let _ = genpdf::fonts::FontFamily {
-            regular: genpdf::fonts::FontData::new(std::fs::read(format!("{}/liberation-sans.regular.ttf", font_dir)).unwrap(), None).unwrap(),
-            bold: genpdf::fonts::FontData::new(std::fs::read(format!("{}/liberation-sans.bold.ttf", font_dir)).unwrap(), None).unwrap(),
-            italic: genpdf::fonts::FontData::new(std::fs::read(format!("{}/liberation-sans.italic.ttf", font_dir)).unwrap(), None).unwrap(),
-            bold_italic: genpdf::fonts::FontData::new(std::fs::read(format!("{}/liberation-sans.bold-italic.ttf", font_dir)).unwrap(), None).unwrap(),
+            regular: genpdf::fonts::FontData::new(
+                std::fs::read(format!("{}/liberation-sans.regular.ttf", font_dir)).unwrap(),
+                None,
+            )
+            .unwrap(),
+            bold: genpdf::fonts::FontData::new(
+                std::fs::read(format!("{}/liberation-sans.bold.ttf", font_dir)).unwrap(),
+                None,
+            )
+            .unwrap(),
+            italic: genpdf::fonts::FontData::new(
+                std::fs::read(format!("{}/liberation-sans.italic.ttf", font_dir)).unwrap(),
+                None,
+            )
+            .unwrap(),
+            bold_italic: genpdf::fonts::FontData::new(
+                std::fs::read(format!("{}/liberation-sans.bold-italic.ttf", font_dir)).unwrap(),
+                None,
+            )
+            .unwrap(),
         };
         let font_duration = start.elapsed();
 
         println!("Font loading:                 {:?}", font_duration);
         println!("PDF export (2 votes):         {:?}", small_total);
         println!("PDF export (100 votes):       {:?}", large_total);
-        println!("PDF gen only (2 votes):       {:?}", small_total.saturating_sub(font_duration));
-        println!("PDF gen only (100 votes):     {:?}", large_total.saturating_sub(font_duration));
+        println!(
+            "PDF gen only (2 votes):       {:?}",
+            small_total.saturating_sub(font_duration)
+        );
+        println!(
+            "PDF gen only (100 votes):     {:?}",
+            large_total.saturating_sub(font_duration)
+        );
 
-        assert!(large_total.as_secs() < 5, "PDF export took too long: {:?}", large_total);
+        assert!(
+            large_total.as_secs() < 5,
+            "PDF export took too long: {:?}",
+            large_total
+        );
     }
-
 }
