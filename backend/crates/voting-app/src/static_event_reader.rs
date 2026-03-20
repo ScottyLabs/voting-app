@@ -1,11 +1,11 @@
 //I don't know the exact pipeline for attendance view, so for now it will just support static view.
+//later, we can add more statistics for result. In that case, this maybe more uesfull
 use entity::event::{self, Entity as Event};
 use entity::user::{self, Entity as User};
 use entity::vote::{self, Entity as Vote};
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, LoaderTrait, QueryFilter};
 use chrono::{DateTime, FixedOffset};
 use serde::Deserialize;
-use serde_json::json;
 use std::collections::HashMap;
 use genpdf::elements::FrameCellDecorator;
 //Struct for exporting vote.
