@@ -20,7 +20,7 @@ Hello, reader! For the remainder of this README, and other documentation, we wil
 
 ### Quick Setup
 
-For detailed setup instructions, see CONTRIBUTING.md.
+For detailed setup instructions, see [SETUP.md](docs/SETUP.md).
 
 Install Bun, Cargo, and Docker (see links above).
 
@@ -48,7 +48,7 @@ frontend $ bun run dev
 
 ### Contributing
 
-Please check [CONTRIBUTING.md](CONTRIBUTING.md) before you contribute to this project!
+Please check [CONTRIBUTING.md](docs/CONTRIBUTING.md) before you contribute to this project!
 
 ### Licenses
 Voting App is distributed under the Apache 2.0 and MIT Licenses, found in the files `LICENSE-APACHE-2.0` and `LICENSE-MIT` respectively.
