@@ -1,9 +1,11 @@
+//I don't know the exact pipeline for attendance view, so for now it will just support static view.
 use entity::event::{self, Entity as Event};
 use entity::user::{self, Entity as User};
 use entity::vote::{self, Entity as Vote};
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, LoaderTrait, QueryFilter};
 use chrono::{DateTime, FixedOffset};
 use serde::Deserialize;
+use serde_json::json;
 use std::collections::HashMap;
 use genpdf::elements::FrameCellDecorator;
 //Struct for exporting vote.
@@ -209,85 +211,35 @@ impl EventLoadStatic {
         doc.render(&mut buf).expect("Failed to render PDF");
         buf
     }
+
+    //for frontent
+    fn export_result_json(&self) -> serde_json::Value{
+        let statistics: serde_json::Map<String, serde_json::Value> = self
+            .get_vote_statistics()
+            .into_iter()
+            .map(|(k,v)| (k, serde_json::Value::from(v)))
+            .collect();
+
+        serde_json::json!({
+            "event_name": self.name,
+            "vote_type": self.data.vote_type,
+            "status": self.status,
+            "total_votes": self.vote_count(),
+            "end_time": self.end_time.map(|t| t.to_rfc3339()),
+            "statistics": statistics
+        })
+    }
+    
 }
 
 
 //test cases are 100% AI generated. Cannot garuntee safety.
-//For actually deployment, remove test cases.
 //run cargo test -- --ignored --nocapture && open /tmp/test_event_result.pdf to preview pdf formatting.
-// run cargo test test_real_db_large_scale -- --ignored --nocapture to test interaction with db
 #[cfg(test)]
 mod tests {
     use super::*;
     use chrono::Utc;
     use serde_json::json;
-    use sea_orm::ActiveValue::Set;
-    use voting_app_store::Store;
-
-    async fn get_db() -> sea_orm::DatabaseConnection {
-        let db_url = std::env::var("DATABASE_URL")
-            .unwrap_or("postgres://slabs:slabs@localhost:8181/voting_app".to_string());
-        sea_orm::Database::connect(&db_url)
-            .await
-            .expect("Failed to connect to DB")
-    }
-
-    async fn seed_db(db: &sea_orm::DatabaseConnection, vote_count: usize) -> i32 {
-        let store = Store::new(db.clone());
-
-        // insert organization
-        let org = store.organizations().create(entity::organization::ActiveModel {
-            name: Set("Test Org".to_string()),
-            data: Set(json!({"description": "test org"})),
-            ..Default::default()
-        }).await.expect("Failed to insert org");
-
-        // insert user
-        let user = store.users().create(entity::user::ActiveModel {
-            name: Set("Alice".to_string()),
-            ..Default::default()
-        }).await.expect("Failed to insert user");
-
-        // insert event
-        let event = store.events().create(entity::event::ActiveModel {
-            event_type: Set("vote".to_string()),
-            name: Set(format!("Test Vote ({} votes)", vote_count)),
-            status: Set("closed".to_string()),
-            start_time: Set(Utc::now().fixed_offset()),
-            end_time: Set(Some(Utc::now().fixed_offset())),
-            data: Set(json!({
-                "description": "test event",
-                "session_code": "TEST01",
-                "vote_type": "motion",
-                "threshold": 0.75,
-                "visibility": { "participants": "live" },
-                "proxy": false,
-                "vote_options": ["yes", "no"]
-            })),
-            created_by_user_id: Set(user.id),
-            organization_id: Set(org.id),
-            ..Default::default()
-        }).await.expect("Failed to insert event");
-
-        // insert votes
-        let responses = ["yes", "no"];
-        for i in 0..vote_count {
-            store.votes().create(entity::vote::ActiveModel {
-                event_id: Set(event.id),
-                voter_id: Set(user.id),
-                cast_time: Set(Utc::now().fixed_offset()),
-                proxy: Set(false),
-                data: Set(json!({
-                    "vote_type": "motion",
-                    "vote_response": [responses[i % 2]]
-                })),
-                ..Default::default()
-            }).await.expect("Failed to insert vote");
-        }
-
-        event.id
-    }
-
     fn mock_user(id: i32, name: &str) -> user::Model {
         user::Model {
             id,
@@ -448,8 +400,8 @@ mod tests {
         std::fs::write(path, &bytes).expect("Failed to write PDF");
         assert!(std::path::Path::new(path).exists());
 
-        // cleanup (comment out to inspect the PDF)
-        // std::fs::remove_file(path).unwrap();
+        // cleanup
+        std::fs::remove_file(path).unwrap();
     }
 
     #[test]
@@ -499,60 +451,4 @@ mod tests {
         assert!(large_total.as_secs() < 5, "PDF export took too long: {:?}", large_total);
     }
 
-    #[tokio::test]
-    #[ignore = "requires running database (docker compose up -d)"]
-    async fn test_real_db_load_and_export() {
-        let db = get_db().await;
-        let event_id = seed_db(&db, 3).await;
-
-        let start = std::time::Instant::now();
-        let event = EventLoadStatic::new(event_id, &db).await;
-        let load_duration = start.elapsed();
-
-        assert!(event.is_some(), "Event {} not found in DB", event_id);
-        let event = event.unwrap();
-
-        println!("DB load time:    {:?}", load_duration);
-        println!("Vote count:      {}", event.vote_count());
-        println!("Event name:      {}", event.name);
-
-        let start = std::time::Instant::now();
-        let bytes = event.export_result_pdf();
-        let pdf_duration = start.elapsed();
-
-        println!("PDF export time: {:?}", pdf_duration);
-        println!("PDF size:        {} bytes", bytes.len());
-
-        assert!(!bytes.is_empty());
-        assert_eq!(&bytes[..4], b"%PDF");
-
-        std::fs::write("/tmp/real_event_result.pdf", &bytes).expect("Failed to write PDF");
-        println!("PDF saved to /tmp/real_event_result.pdf");
-    }
-
-    #[tokio::test]
-    #[ignore = "requires running database (docker compose up -d)"]
-    async fn test_real_db_large_scale() {
-        let db = get_db().await;
-
-        for vote_count in [10, 50, 100, 500] {
-            let event_id = seed_db(&db, vote_count).await;
-
-            let start = std::time::Instant::now();
-            let event = EventLoadStatic::new(event_id, &db).await.unwrap();
-            let load_duration = start.elapsed();
-
-            let start = std::time::Instant::now();
-            let bytes = event.export_result_pdf();
-            let pdf_duration = start.elapsed();
-
-            println!("votes: {:>4} | db load: {:>10?} | pdf gen: {:>10?} | pdf size: {} bytes",
-                vote_count, load_duration, pdf_duration, bytes.len());
-
-            std::fs::write(
-                format!("/tmp/real_event_{}_votes.pdf", vote_count),
-                &bytes
-            ).expect("Failed to write PDF");
-        }
-    }
 }
