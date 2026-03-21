@@ -520,6 +520,58 @@ mod tests {
     }
 
     #[test]
+    fn test_export_result_json_election_pct() {
+        // 4 voters: Alice gets 3 first-choice votes (75%), Bob gets 1 (25%)
+        let votes = vec![
+            (mock_vote(1, 1, 1, vec!["Alice", "Bob"]), Some(mock_user(1, "Voter1"))),
+            (mock_vote(2, 1, 2, vec!["Alice", "Bob"]), Some(mock_user(2, "Voter2"))),
+            (mock_vote(3, 1, 3, vec!["Alice", "Bob"]), Some(mock_user(3, "Voter3"))),
+            (mock_vote(4, 1, 4, vec!["Bob", "Alice"]), Some(mock_user(4, "Voter4"))),
+        ];
+        let mut event = mock_event(votes);
+        event.event_type = EventType::Election;
+        let result = event.export_result_json();
+
+        let stats = result["statistics"].as_array().unwrap();
+        assert_eq!(stats[0]["results"]["Alice"]["pct"], 75);
+        assert_eq!(stats[0]["results"]["Bob"]["pct"], 25);
+        // rank 2: Bob x3 (75%), Alice x1 (25%)
+        assert_eq!(stats[1]["results"]["Bob"]["pct"], 75);
+        assert_eq!(stats[1]["results"]["Alice"]["pct"], 25);
+    }
+
+    #[test]
+    fn test_get_ranked_statistics_unequal_lengths() {
+        // voter1 ranks 3, voter2 ranks only 1
+        let votes = vec![
+            (mock_vote(1, 1, 1, vec!["Alice", "Bob", "Carol"]), Some(mock_user(1, "Voter1"))),
+            (mock_vote(2, 1, 2, vec!["Bob"]), Some(mock_user(2, "Voter2"))),
+        ];
+        let event = mock_event(votes);
+        let ranked = event.get_ranked_statistics();
+
+        assert_eq!(ranked.len(), 3); // max rank depth is 3
+        assert_eq!(ranked[0].get("Alice"), Some(&1));
+        assert_eq!(ranked[0].get("Bob"), Some(&1));
+        assert_eq!(ranked[1].get("Bob"), Some(&1)); // only voter1 ranked 2nd
+        assert_eq!(ranked[2].get("Carol"), Some(&1)); // only voter1 ranked 3rd
+    }
+
+    #[test]
+    #[ignore = "requires LiberationSans font files in ./fonts directory"]
+    fn test_export_result_pdf_election_returns_bytes() {
+        let votes = vec![
+            (mock_vote(1, 1, 1, vec!["Alice", "Bob", "Carol"]), Some(mock_user(1, "Voter1"))),
+            (mock_vote(2, 1, 2, vec!["Bob", "Alice", "Carol"]), Some(mock_user(2, "Voter2"))),
+        ];
+        let mut event = mock_event(votes);
+        event.event_type = EventType::Election;
+        let bytes = event.export_result_pdf();
+        assert!(!bytes.is_empty());
+        assert_eq!(&bytes[..4], b"%PDF");
+    }
+
+    #[test]
     fn test_export_result_json_preview() {
         let votes = vec![
             (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
