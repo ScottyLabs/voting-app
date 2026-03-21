@@ -17,6 +17,10 @@ license.workspace = true
 name = "backend-app"
 path = "src/main.rs"
 
+[[bin]]
+name = "backend-test"
+path = "src/test_event_data_cases.rs"
+
 [dependencies]
 axum = "0.8.8"
 chrono = "0.4.44"
