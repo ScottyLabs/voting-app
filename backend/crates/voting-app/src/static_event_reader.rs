@@ -8,14 +8,15 @@ use genpdf::elements::FrameCellDecorator;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, LoaderTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use entity::event::EventType;
 
-// TODO: replace with entity::event::EventType once entity is updated
-#[derive(Deserialize, Serialize, PartialEq)]
-#[serde(rename_all = "lowercase")]
-enum EventType {
-    Motion,
-    Election,
-}
+// // TODO: replace with entity::event::EventType once entity is updated
+// #[derive(Deserialize, Serialize, PartialEq)]
+// #[serde(rename_all = "lowercase")]
+// enum EventType {
+//     Motion,
+//     Election,
+// }
 
 #[derive(Deserialize, Serialize)]
 enum ParticipantVisibility {
@@ -82,7 +83,8 @@ impl EventLoadStatic {
         let data: EventData = serde_json::from_value(event.data).ok()?;
         Some(EventLoadStatic {
             event_id: event.id,
-            event_type: serde_json::from_value(serde_json::Value::String(event.event_type)).ok()?,
+            event_type: event.event_type,
+            // event_type: serde_json::from_value(serde_json::Value::String(event.event_type)).ok()?,
             name: event.name,
             status: event.status,
             start_time: event.start_time.into(),
