@@ -468,6 +468,58 @@ mod tests {
     }
 
     #[test]
+    fn test_get_ranked_statistics() {
+        let votes = vec![
+            (mock_vote(1, 1, 1, vec!["Alice", "Bob", "Carol"]), Some(mock_user(1, "Voter1"))),
+            (mock_vote(2, 1, 2, vec!["Bob", "Alice", "Carol"]), Some(mock_user(2, "Voter2"))),
+            (mock_vote(3, 1, 3, vec!["Alice", "Carol", "Bob"]), Some(mock_user(3, "Voter3"))),
+        ];
+        let mut event = mock_event(votes);
+        event.event_type = EventType::Election;
+        let ranked = event.get_ranked_statistics();
+
+        // 1st choice: Alice x2, Bob x1
+        assert_eq!(ranked[0].get("Alice"), Some(&2));
+        assert_eq!(ranked[0].get("Bob"), Some(&1));
+        // 2nd choice: Bob x1, Alice x1, Carol x1
+        assert_eq!(ranked[1].get("Bob"), Some(&1));
+        assert_eq!(ranked[1].get("Alice"), Some(&1));
+        assert_eq!(ranked[1].get("Carol"), Some(&1));
+        // 3rd choice: Carol x2, Bob x1
+        assert_eq!(ranked[2].get("Carol"), Some(&2));
+        assert_eq!(ranked[2].get("Bob"), Some(&1));
+    }
+
+    #[test]
+    fn test_get_ranked_statistics_empty() {
+        let event = mock_event(vec![]);
+        let ranked = event.get_ranked_statistics();
+        assert!(ranked.is_empty());
+    }
+
+    #[test]
+    fn test_export_result_json_election() {
+        let votes = vec![
+            (mock_vote(1, 1, 1, vec!["Alice", "Bob"]), Some(mock_user(1, "Voter1"))),
+            (mock_vote(2, 1, 2, vec!["Alice", "Bob"]), Some(mock_user(2, "Voter2"))),
+            (mock_vote(3, 1, 3, vec!["Bob", "Alice"]), Some(mock_user(3, "Voter3"))),
+        ];
+        let mut event = mock_event(votes);
+        event.event_type = EventType::Election;
+        let result = event.export_result_json();
+
+        let stats = result["statistics"].as_array().unwrap();
+        // rank 1
+        assert_eq!(stats[0]["rank"], 1);
+        assert_eq!(stats[0]["results"]["Alice"]["count"], 2);
+        assert_eq!(stats[0]["results"]["Bob"]["count"], 1);
+        // rank 2
+        assert_eq!(stats[1]["rank"], 2);
+        assert_eq!(stats[1]["results"]["Bob"]["count"], 2);
+        assert_eq!(stats[1]["results"]["Alice"]["count"], 1);
+    }
+
+    #[test]
     fn test_export_result_json_preview() {
         let votes = vec![
             (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
