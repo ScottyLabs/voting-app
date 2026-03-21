@@ -10,7 +10,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use entity::event::EventType;
 
-// // TODO: replace with entity::event::EventType once entity is updated
 // #[derive(Deserialize, Serialize, PartialEq)]
 // #[serde(rename_all = "lowercase")]
 // enum EventType {
