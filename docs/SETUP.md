@@ -24,6 +24,9 @@ Run `git clone https://github.com/ScottyLabs/voting-app.git` in your favorite (o
 The backend is the link between the frontend and the database.
 
 ```bash
+# Copy the .env.example into a .env
+cp .env.example .env
+
 # To start the backend, first navigate with
 cd backend
 
