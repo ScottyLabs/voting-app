@@ -47,6 +47,9 @@
       enable = true;
       packageOverrides.cargo = config.languages.rust.toolchainPackage;
       packageOverrides.clippy = config.languages.rust.toolchainPackage;
+      settings.allFeatures = true;
+      settings.denyWarnings = true;
+      settings.extraArgs = "--manifest-path backend/Cargo.toml";
     };
     cargo-nix-update = {
       enable = true;
