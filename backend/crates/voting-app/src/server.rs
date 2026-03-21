@@ -89,7 +89,7 @@ pub async fn setup() {
         )
         .route(
             "/events/:id/results",
-            get(crate::domain::votes::handlers::get_results),
+            get(crate::domain::votes::handlers::get_motion_results),
         )
         .route("/health", get(|| async { "OK" }))
         .fallback(get(crate::domain::auth::handlers::demo_not_found)) // demo only

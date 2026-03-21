@@ -10,7 +10,7 @@ use sea_orm::ActiveValue::Set;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use voting_app_store::Store;
-
+use entity::enums::StatusOption;
 use crate::AppState;
 use crate::core::auth::middleware::SyncedUser;
 
@@ -56,7 +56,7 @@ pub async fn cast_vote(
     let event_data = event.data.clone();
     let vote_type = event_data["vote_type"].as_str().unwrap_or("");
 
-    if (vote_type != "motion" || vote_type != "election") {
+    if vote_type != "motion" || vote_type != "election" {
         return (
             StatusCode::BAD_REQUEST,
             Json(json!({"error": "Event is not a motion"})),
@@ -64,7 +64,7 @@ pub async fn cast_vote(
             .into_response();
     }
 
-    if event.status != "open" { //CHANGE THIS WHEN YIYOUNG CHANGES TO ENUM  
+    if event.status != StatusOption::Active { //CHANGE THIS WHEN YIYOUNG CHANGES TO ENUM  
         return (
             StatusCode::BAD_REQUEST,
             Json(json!({"error": "Event is not open"})),
@@ -164,7 +164,7 @@ pub async fn get_motion_results(
 
     //Place holder for when we figure the visibility out
     let visibility = event_data["visibility"]["participants"].as_str().unwrap_or("");
-    if visibility == "hidden_until_release" && event.status != "closed" {
+    if visibility == "hidden_until_release" && event.status != StatusOption::Inactive {
         return (
             StatusCode::FORBIDDEN,
             Json(json!({"error": "Results are not yet available"})),
