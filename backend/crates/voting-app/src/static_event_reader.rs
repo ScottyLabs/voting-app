@@ -371,9 +371,16 @@ mod tests {
     }
 
     fn mock_event(votes_with_user: Vec<(vote::Model, Option<user::Model>)>) -> EventLoadStatic {
+        mock_event_typed(votes_with_user, EventType::Motion)
+    }
+
+    fn mock_event_typed(
+        votes_with_user: Vec<(vote::Model, Option<user::Model>)>,
+        event_type: EventType,
+    ) -> EventLoadStatic {
         EventLoadStatic {
             event_id: 1,
-            event_type: EventType::Motion,
+            event_type,
             name: "Test Event".to_string(),
             status: StatusOption::Active,
             start_time: Utc::now().fixed_offset(),
@@ -477,8 +484,7 @@ mod tests {
             (mock_vote(2, 1, 2, vec!["Bob", "Alice", "Carol"]), Some(mock_user(2, "Voter2"))),
             (mock_vote(3, 1, 3, vec!["Alice", "Carol", "Bob"]), Some(mock_user(3, "Voter3"))),
         ];
-        let mut event = mock_event(votes);
-        event.event_type = EventType::Election;
+        let event = mock_event_typed(votes, EventType::Election);
         let ranked = event.get_ranked_statistics();
 
         // 1st choice: Alice x2, Bob x1
@@ -507,8 +513,7 @@ mod tests {
             (mock_vote(2, 1, 2, vec!["Alice", "Bob"]), Some(mock_user(2, "Voter2"))),
             (mock_vote(3, 1, 3, vec!["Bob", "Alice"]), Some(mock_user(3, "Voter3"))),
         ];
-        let mut event = mock_event(votes);
-        event.event_type = EventType::Election;
+        let event = mock_event_typed(votes, EventType::Election);
         let result = event.export_result_json();
 
         let stats = result["statistics"].as_array().unwrap();
@@ -531,8 +536,7 @@ mod tests {
             (mock_vote(3, 1, 3, vec!["Alice", "Bob"]), Some(mock_user(3, "Voter3"))),
             (mock_vote(4, 1, 4, vec!["Bob", "Alice"]), Some(mock_user(4, "Voter4"))),
         ];
-        let mut event = mock_event(votes);
-        event.event_type = EventType::Election;
+        let event = mock_event_typed(votes, EventType::Election);
         let result = event.export_result_json();
 
         let stats = result["statistics"].as_array().unwrap();
@@ -567,8 +571,7 @@ mod tests {
             (mock_vote(1, 1, 1, vec!["Alice", "Bob", "Carol"]), Some(mock_user(1, "Voter1"))),
             (mock_vote(2, 1, 2, vec!["Bob", "Alice", "Carol"]), Some(mock_user(2, "Voter2"))),
         ];
-        let mut event = mock_event(votes);
-        event.event_type = EventType::Election;
+        let event = mock_event_typed(votes, EventType::Election);
         let bytes = event.export_result_pdf();
         assert!(!bytes.is_empty());
         assert_eq!(&bytes[..4], b"%PDF");
@@ -676,8 +679,7 @@ mod tests {
             (mock_vote(3, 1, 3, vec!["Alice", "Carol", "Bob"]), Some(mock_user(3, "Voter3"))),
             (mock_vote(4, 1, 4, vec!["Carol", "Alice", "Bob"]), Some(mock_user(4, "Voter4"))),
         ];
-        let mut event = mock_event(votes);
-        event.event_type = EventType::Election;
+        let event = mock_event_typed(votes, EventType::Election);
         let bytes = event.export_result_pdf();
         std::fs::write("/tmp/test_event_result_election.pdf", &bytes).expect("Failed to write PDF");
     }
