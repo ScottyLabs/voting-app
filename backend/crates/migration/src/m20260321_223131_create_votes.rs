@@ -1,4 +1,4 @@
-use crate::m20260321_223131_create_voter::Voter;
+use crate::m20260313_021648_create_voters::Voter;
 use sea_orm_migration::prelude::*;
 
 #[derive(DeriveMigrationName)]
