@@ -191,8 +191,8 @@ fn parse_timestamp(raw: &str) -> Result<DateTime<FixedOffset>, ApiError> {
 }
 
 fn map_response(model: event::Model) -> Result<RecordResponse, ApiError> {
-    let data: EventData =
-        serde_json::from_value(model.data).unwrap_or_else(|_| default_event_data(&model.event_type));
+    let data: EventData = serde_json::from_value(model.data)
+        .unwrap_or_else(|_| default_event_data(&model.event_type));
 
     Ok(RecordResponse {
         id: model.id,

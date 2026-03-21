@@ -4,11 +4,8 @@ pub const EVENT_TYPE_ATTENDANCE: &str = "attendance";
 pub const EVENT_TYPE_MOTION: &str = "motion";
 pub const EVENT_TYPE_VOTE: &str = "vote";
 
-pub const SUPPORTED_EVENT_TYPES: [&str; 3] = [
-    EVENT_TYPE_ATTENDANCE,
-    EVENT_TYPE_MOTION,
-    EVENT_TYPE_VOTE,
-];
+pub const SUPPORTED_EVENT_TYPES: [&str; 3] =
+    [EVENT_TYPE_ATTENDANCE, EVENT_TYPE_MOTION, EVENT_TYPE_VOTE];
 
 pub fn is_supported_event_type(event_type: &str) -> bool {
     SUPPORTED_EVENT_TYPES.contains(&event_type)
@@ -101,14 +98,17 @@ pub fn validate_event_data(event_type: &str, data: &EventData) -> Result<(), Str
         + usize::from(data.vote.is_some());
 
     if provided_fields != 1 {
-        return Err("event.data must include exactly one of attendance, motion, or vote".to_owned());
+        return Err(
+            "event.data must include exactly one of attendance, motion, or vote".to_owned(),
+        );
     }
 
     match event_type {
         EVENT_TYPE_ATTENDANCE => {
-            let attendance = data.attendance.as_ref().ok_or_else(|| {
-                "event.data.attendance is required for attendance".to_owned()
-            })?;
+            let attendance = data
+                .attendance
+                .as_ref()
+                .ok_or_else(|| "event.data.attendance is required for attendance".to_owned())?;
             validate_attendance_data(attendance)
         }
         EVENT_TYPE_MOTION => {
@@ -150,7 +150,10 @@ fn validate_motion_data(data: &MotionEventData) -> Result<(), String> {
 }
 
 fn validate_vote_data(data: &VoteEventData) -> Result<(), String> {
-    validate_non_empty(&data.description, "event.data.vote.description cannot be empty")?;
+    validate_non_empty(
+        &data.description,
+        "event.data.vote.description cannot be empty",
+    )?;
     validate_non_empty(&data.vote_type, "event.data.vote.vote_type cannot be empty")?;
     validate_threshold(data.threshold, "event.data.vote.threshold")?;
     validate_non_empty(
@@ -176,9 +179,7 @@ fn validate_threshold(value: f64, field_name: &str) -> Result<(), String> {
 
 fn validate_vote_options(options: &[String], field_name: &str) -> Result<(), String> {
     if options.is_empty() {
-        return Err(format!(
-            "{field_name} must include at least one option"
-        ));
+        return Err(format!("{field_name} must include at least one option"));
     }
     if options.iter().any(|option| option.trim().is_empty()) {
         return Err(format!("{field_name} cannot include empty values"));
