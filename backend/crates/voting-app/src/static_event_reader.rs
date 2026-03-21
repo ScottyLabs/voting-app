@@ -8,8 +8,9 @@ use genpdf::elements::FrameCellDecorator;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, LoaderTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+
 // TODO: replace with entity::event::EventType once entity is updated
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 enum EventType {
     Motion,
@@ -130,6 +131,22 @@ impl EventLoadStatic {
             .collect()
     }
 
+    // returns Vec where index = rank position, value = HashMap of option -> count
+    // e.g. index 0 (1st choice): {"Alice": 5, "Bob": 3}
+    //      index 1 (2nd choice): {"Bob": 4, "Carol": 4}
+    fn get_ranked_statistics(&self) -> Vec<HashMap<String, usize>> {
+        let mut rank_counts: Vec<HashMap<String, usize>> = Vec::new();
+        for result in self.get_event_result() {
+            for (rank, option) in result.vote_response.iter().enumerate() {
+                if rank_counts.len() <= rank {
+                    rank_counts.resize(rank + 1, HashMap::new());
+                }
+                *rank_counts[rank].entry(option.clone()).or_insert(0) += 1;
+            }
+        }
+        rank_counts
+    }
+
     // returns HashMap of response -> count
     // e.g. {"yes": 10, "no": 5}
     fn get_vote_statistics(&self) -> HashMap<String, usize> {
@@ -195,13 +212,45 @@ impl EventLoadStatic {
         )));
         doc.push(genpdf::elements::Break::new(1));
 
-        // statistics
+        // statistics — branched by event type
         doc.push(genpdf::elements::Paragraph::new("--- Results ---"));
-        for (response, count) in self.get_vote_statistics() {
-            doc.push(genpdf::elements::Paragraph::new(format!(
-                "{}: {} votes",
-                response, count
-            )));
+        let total = self.vote_count();
+        if self.event_type == EventType::Motion {
+            for (response, count) in self.get_vote_statistics() {
+                let pct = if total > 0 { count * 100 / total } else { 0 };
+                doc.push(genpdf::elements::Paragraph::new(format!(
+                    "{}: {} ({}%)",
+                    response, count, pct
+                )));
+            }
+        } else {
+            // ranked choice: per-rank breakdown
+            let ordinal = |n: usize| {
+                let suffix = match n % 100 {
+                    11 | 12 | 13 => "th",
+                    _ => match n % 10 {
+                        1 => "st",
+                        2 => "nd",
+                        3 => "rd",
+                        _ => "th",
+                    },
+                };
+                format!("{}{}", n, suffix)
+            };
+            for (rank, counts) in self.get_ranked_statistics().iter().enumerate() {
+                let rank_total: usize = counts.values().sum();
+                doc.push(genpdf::elements::Paragraph::new(format!(
+                    "{}:",
+                    ordinal(rank + 1)
+                )));
+                for (option, count) in counts {
+                    let pct = if rank_total > 0 { count * 100 / rank_total } else { 0 };
+                    doc.push(genpdf::elements::Paragraph::new(format!(
+                        "  {}: {} ({}%)",
+                        option, count, pct
+                    )));
+                }
+            }
         }
         doc.push(genpdf::elements::Break::new(1));
 
@@ -246,17 +295,44 @@ impl EventLoadStatic {
 
     //for frontent
     fn export_result_json(&self) -> serde_json::Value {
-        let statistics: serde_json::Map<String, serde_json::Value> = self
-            .get_vote_statistics()
-            .into_iter()
-            .map(|(k, v)| (k, serde_json::Value::from(v)))
-            .collect();
+        let total = self.vote_count();
+        let statistics = if self.event_type == EventType::Motion {
+            // flat: { "yes": { "count": 2, "pct": 67 }, ... }
+            let map: serde_json::Map<String, serde_json::Value> = self
+                .get_vote_statistics()
+                .into_iter()
+                .map(|(k, count)| {
+                    let pct = if total > 0 { count * 100 / total } else { 0 };
+                    (k, serde_json::json!({ "count": count, "pct": pct }))
+                })
+                .collect();
+            serde_json::Value::Object(map)
+        } else {
+            // ranked: [ { "rank": 1, "results": { "Alice": { "count": 2, "pct": 67 }, ... } }, ... ]
+            let ranked: Vec<serde_json::Value> = self
+                .get_ranked_statistics()
+                .into_iter()
+                .enumerate()
+                .map(|(rank, counts)| {
+                    let rank_total: usize = counts.values().sum();
+                    let results: serde_json::Map<String, serde_json::Value> = counts
+                        .into_iter()
+                        .map(|(option, count)| {
+                            let pct = if rank_total > 0 { count * 100 / rank_total } else { 0 };
+                            (option, serde_json::json!({ "count": count, "pct": pct }))
+                        })
+                        .collect();
+                    serde_json::json!({ "rank": rank + 1, "results": results })
+                })
+                .collect();
+            serde_json::Value::Array(ranked)
+        };
 
         serde_json::json!({
             "event_name": self.name,
             "event_type": self.event_type,
             "status": self.status,
-            "total_votes": self.vote_count(),
+            "total_votes": total,
             "end_time": self.end_time.map(|t| t.to_rfc3339()),
             "statistics": statistics
         })
@@ -417,8 +493,10 @@ mod tests {
         assert_eq!(result["status"], "closed");
         assert_eq!(result["total_votes"], 3);
         assert!(result["end_time"].is_null());
-        assert_eq!(result["statistics"]["yes"], 2);
-        assert_eq!(result["statistics"]["no"], 1);
+        assert_eq!(result["statistics"]["yes"]["count"], 2);
+        assert_eq!(result["statistics"]["yes"]["pct"], 66);
+        assert_eq!(result["statistics"]["no"]["count"], 1);
+        assert_eq!(result["statistics"]["no"]["pct"], 33);
     }
 
     #[test]
@@ -479,6 +557,21 @@ mod tests {
         let event = mock_event(votes);
         let bytes = event.export_result_pdf();
         std::fs::write("/tmp/test_event_result.pdf", &bytes).expect("Failed to write PDF");
+    }
+
+    #[test]
+    #[ignore = "preview only — writes pdf to /tmp and does not clean up"]
+    fn test_export_result_pdf_preview_election() {
+        let votes = vec![
+            (mock_vote(1, 1, 1, vec!["Alice", "Bob", "Carol"]), Some(mock_user(1, "Voter1"))),
+            (mock_vote(2, 1, 2, vec!["Bob", "Alice", "Carol"]), Some(mock_user(2, "Voter2"))),
+            (mock_vote(3, 1, 3, vec!["Alice", "Carol", "Bob"]), Some(mock_user(3, "Voter3"))),
+            (mock_vote(4, 1, 4, vec!["Carol", "Alice", "Bob"]), Some(mock_user(4, "Voter4"))),
+        ];
+        let mut event = mock_event(votes);
+        event.event_type = EventType::Election;
+        let bytes = event.export_result_pdf();
+        std::fs::write("/tmp/test_event_result_election.pdf", &bytes).expect("Failed to write PDF");
     }
 
     #[test]
