@@ -4,7 +4,10 @@ use http::Uri;
 use migration::{Migrator, MigratorTrait};
 use sea_orm::Database;
 use tower::ServiceBuilder;
-use tower_sessions::{Expiry, SessionManagerLayer, cookie::time::Duration};
+use tower_sessions::{
+    Expiry, SessionManagerLayer,
+    cookie::{SameSite, time::Duration},
+};
 
 use crate::{AppState, config::Config};
 
@@ -23,6 +26,7 @@ pub async fn setup() {
 
     let session_layer = SessionManagerLayer::new(tower_sessions::MemoryStore::default())
         .with_secure(false)
+        .with_same_site(SameSite::Lax)
         .with_expiry(Expiry::OnInactivity(Duration::hours(24)));
 
     let oidc_auth_layer = OidcAuthLayer::<EmptyAdditionalClaims>::discover_client(
