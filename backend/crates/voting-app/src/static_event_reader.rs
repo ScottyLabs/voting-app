@@ -19,14 +19,14 @@ struct VoteResult {
 // parsed from event.data JSON blob
 #[derive(Deserialize)]
 struct Visibility {
-    participants: String, // "hidden_until_release" | "live"
+    participants: String, // "hidden_until_release" | "live" ==> FIX: should be ENUM
 }
 
 #[derive(Deserialize)]
 struct EventData {
     description: String,
     session_code: String,
-    vote_type: String, // "motion" | "election"
+    vote_type: String, // "motion" | "election" ==> FIX: should be ENUM
     threshold: f64,    // approval threshold e.g. 0.75 = 75%
     visibility: Visibility,
     proxy: bool,
@@ -36,7 +36,7 @@ struct EventData {
 //EventTable struct
 struct EventLoadStatic {
     event_id: i32,
-    event_type: String,
+    event_type: String, //==> FIX: should be ENUM
     name: String,
     status: String,
     start_time: DateTime<FixedOffset>, //timestamp with timezone
