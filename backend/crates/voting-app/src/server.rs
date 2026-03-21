@@ -64,7 +64,10 @@ pub async fn setup() {
     let bind_addr = app_state.config.bind_addr.clone();
 
     let protected_auth_router = Router::new()
-        .route("/auth/login", get(crate::domain::auth::handlers::login))
+        .route(
+            "/auth/callback",
+            get(crate::domain::auth::handlers::callback),
+        )
         .route("/auth/logout", get(crate::domain::auth::handlers::logout))
         .layer(middleware::from_fn_with_state(
             app_state.clone(),
@@ -73,14 +76,11 @@ pub async fn setup() {
         .layer(oidc_login_service.clone());
 
     let api_router = Router::new()
+        .route("/auth/login", get(crate::domain::auth::handlers::login))
         .merge(protected_auth_router)
         .route(
             "/auth/status",
             get(crate::domain::auth::handlers::auth_status),
-        )
-        .route(
-            "/auth/callback",
-            get(|| async { "Use /auth/login to initiate authentication" }),
         )
         .route("/health", get(|| async { "OK" }))
         .layer(oidc_auth_service)

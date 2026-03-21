@@ -443,6 +443,7 @@ dependencies = [
  "tower-sessions",
  "tracing",
  "tracing-subscriber",
+ "urlencoding",
  "voting-app-store",
 ]
 

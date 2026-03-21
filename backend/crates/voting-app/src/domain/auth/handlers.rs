@@ -6,6 +6,7 @@ use axum::{
 use axum_oidc::{EmptyAdditionalClaims, OidcClaims, OidcRpInitiatedLogout};
 use http::Uri;
 use serde::{Deserialize, Serialize};
+use urlencoding::encode;
 
 use crate::AppState;
 use crate::core::auth::middleware::SyncedUser;
@@ -22,6 +23,26 @@ pub struct AuthStatusResponse {
 }
 
 pub async fn login(
+    State(state): State<AppState>,
+    Query(params): Query<LoginQuery>,
+) -> impl IntoResponse {
+    let callback = format!(
+        "{}/auth/callback",
+        state.config.app_base_url.trim_end_matches('/')
+    );
+
+    if let Some(redirect_uri) = params
+        .redirect_uri
+        .filter(|uri| uri.starts_with(&state.config.app_base_url))
+    {
+        let target = format!("{}?redirect_uri={}", callback, encode(&redirect_uri));
+        return Redirect::to(&target);
+    }
+
+    Redirect::to(&callback)
+}
+
+pub async fn callback(
     _claims: OidcClaims<EmptyAdditionalClaims>,
     user: SyncedUser,
     State(state): State<AppState>,
@@ -41,11 +62,9 @@ pub async fn logout(
     logout: OidcRpInitiatedLogout,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    let post_logout_redirect = format!("{}/", state.config.app_base_url.trim_end_matches('/'));
-
     logout
         .with_post_logout_redirect(
-            Uri::from_maybe_shared(post_logout_redirect).expect("valid APP_BASE_URL"),
+            Uri::from_maybe_shared(state.config.app_base_url.clone()).expect("valid APP_BASE_URL"),
         )
         .into_response()
 }
