@@ -8,3 +8,4 @@ pub mod organization;
 pub mod organization_member;
 pub mod user;
 pub mod vote;
+pub mod voter;

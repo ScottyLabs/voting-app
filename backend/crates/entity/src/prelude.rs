@@ -5,3 +5,4 @@ pub use super::organization::Entity as Organization;
 pub use super::organization_member::Entity as OrganizationMember;
 pub use super::user::Entity as User;
 pub use super::vote::Entity as Vote;
+pub use super::voter::Entity as Voter;
