@@ -17,7 +17,7 @@ type VoteData = {
 }
 ```
 
-### Field Definitions
+### Field Descriptions
 - `vote_type`: Specifies the type of vote represented by this response. Examples include `"motion"` and `"election"`.
 - `vote_response`: Stores the participant’s submitted response as an array.
   - For a standard motion, this array typically contains a single value.
@@ -51,7 +51,7 @@ type EventData = {
 }
 ```
 
-### Field Definitions
+### Field Descriptions
 - `description`: A textual description of the event.
 - `session_code`: A code used for joining or identifying the session.
 - `vote_type`: Specifies whether the event is a motion or an election.
@@ -89,7 +89,7 @@ type OrganizationData = {
 }
 ```
 
-### Field Definitions
+### Field Descriptions
 - description: A textual description of the organization.
 
 ### Example Usage
@@ -101,7 +101,7 @@ type OrganizationData = {
 
 ## `log.data`
 
-The `log.data` field stores audit log information for system actions.
+The `log.data` field stores audit log information for system actions. Logging has not been implemented yet, so this section is not in use currently.
 
 ### Type Definition
 ```typescript
@@ -123,7 +123,7 @@ type LogData = {
 }
 ```
 
-### Field Definitions
+### Field Descriptions
 - `action`: A description of the action being logged.
 - `target`: Identifies the record affected by the action.
 - `table`: The name of the affected table.
