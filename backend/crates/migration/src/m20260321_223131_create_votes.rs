@@ -1,5 +1,4 @@
-use crate::m20260308_183617_create_users::User;
-use crate::m20260310_000844_create_events::Event;
+use crate::m20260321_223131_create_voter::Voter;
 use sea_orm_migration::prelude::*;
 
 #[derive(DeriveMigrationName)]
@@ -13,33 +12,18 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Vote::Table)
                     .if_not_exists()
-                    .col(
-                        ColumnDef::new(Vote::Id)
-                            .integer()
-                            .not_null()
-                            .auto_increment()
-                            .primary_key(),
-                    )
-                    .col(ColumnDef::new(Vote::EventId).integer().not_null())
-                    .col(ColumnDef::new(Vote::VoterId).integer().not_null())
+                    .col(ColumnDef::new(Vote::Id).integer().not_null().primary_key())
                     .col(
                         ColumnDef::new(Vote::CastTime)
                             .timestamp_with_time_zone()
                             .not_null()
                             .default(Expr::current_timestamp()),
                     )
-                    .col(ColumnDef::new(Vote::Proxy).boolean().not_null())
                     .col(ColumnDef::new(Vote::Data).json_binary().not_null())
                     .foreign_key(
                         ForeignKey::create()
-                            .from(Vote::Table, Vote::EventId)
-                            .to(Event::Table, Event::Id)
-                            .on_delete(ForeignKeyAction::Cascade),
-                    )
-                    .foreign_key(
-                        ForeignKey::create()
-                            .from(Vote::Table, Vote::VoterId)
-                            .to(User::Table, User::Id)
+                            .from(Vote::Table, Vote::Id)
+                            .to(Voter::Table, Voter::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )
                     .to_owned(),
@@ -58,9 +42,6 @@ impl MigrationTrait for Migration {
 pub enum Vote {
     Table,
     Id,
-    EventId,
-    VoterId,
     CastTime,
-    Proxy,
     Data,
 }
