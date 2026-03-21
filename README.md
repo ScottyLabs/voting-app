@@ -26,6 +26,9 @@ Install Bun, Cargo, and Docker (see links above).
 
 #### Starting the backend
 ```bash
+# Copy the .env.example
+$ cp .env.example .env
+
 # Start Docker
 backend $ docker compose up -d
 
