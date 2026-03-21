@@ -78,7 +78,9 @@ pub async fn sync_user_middleware(
 
             match new_user.insert(&state.db).await {
                 Ok(created) => {
-                    request.extensions_mut().insert(SyncedUser(Arc::new(created)));
+                    request
+                        .extensions_mut()
+                        .insert(SyncedUser(Arc::new(created)));
                 }
                 Err(err) => {
                     tracing::error!("failed to create user from oidc claims: {:?}", err);
