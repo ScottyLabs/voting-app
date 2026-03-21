@@ -1,5 +1,5 @@
 // Loads event + votes into memory once. Useful for repeated reads (export, statistics)
-// without re-querying the DB. Consider caching for closed events.
+// without re-querying the DB. Consider caching for closed events. 
 use chrono::{DateTime, FixedOffset};
 use entity::event::Entity as Event;
 use entity::user::{self, Entity as User};
