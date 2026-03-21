@@ -6,8 +6,24 @@ use entity::user::{self, Entity as User};
 use entity::vote::{self, Entity as Vote};
 use genpdf::elements::FrameCellDecorator;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, LoaderTrait, QueryFilter};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+// TODO: replace with entity::event::EventType once entity is updated
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+enum EventType {
+    Motion,
+    Election,
+}
+
+#[derive(Deserialize, Serialize)]
+enum ParticipantVisibility {
+    #[serde(rename = "hidden_until_release")]
+    HiddenUntilRelease,
+    #[serde(rename = "live")]
+    Live,
+}
+
 //Struct for exporting vote.
 struct VoteResult {
     user_id: i32,
@@ -19,14 +35,13 @@ struct VoteResult {
 // parsed from event.data JSON blob
 #[derive(Deserialize)]
 struct Visibility {
-    participants: String, // "hidden_until_release" | "live" ==> FIX: should be ENUM
+    participants: ParticipantVisibility,
 }
 
 #[derive(Deserialize)]
 struct EventData {
     description: String,
     session_code: String,
-    vote_type: String, // "motion" | "election" ==> FIX: should be ENUM
     threshold: f64,    // approval threshold e.g. 0.75 = 75%
     visibility: Visibility,
     proxy: bool,
@@ -36,7 +51,7 @@ struct EventData {
 //EventTable struct
 struct EventLoadStatic {
     event_id: i32,
-    event_type: String, //==> FIX: should be ENUM
+    event_type: EventType,
     name: String,
     status: String,
     start_time: DateTime<FixedOffset>, //timestamp with timezone
@@ -66,7 +81,7 @@ impl EventLoadStatic {
         let data: EventData = serde_json::from_value(event.data).ok()?;
         Some(EventLoadStatic {
             event_id: event.id,
-            event_type: event.event_type,
+            event_type: serde_json::from_value(serde_json::Value::String(event.event_type)).ok()?,
             name: event.name,
             status: event.status,
             start_time: event.start_time.into(),
@@ -168,8 +183,11 @@ impl EventLoadStatic {
             self.name
         )));
         doc.push(genpdf::elements::Paragraph::new(format!(
-            "Vote Type: {}",
-            self.data.vote_type
+            "Event Type: {}",
+            serde_json::to_value(&self.event_type)
+                .ok()
+                .and_then(|v| v.as_str().map(|s| s.to_owned()))
+                .unwrap_or_default()
         )));
         doc.push(genpdf::elements::Paragraph::new(format!(
             "Total Votes: {}",
@@ -236,7 +254,7 @@ impl EventLoadStatic {
 
         serde_json::json!({
             "event_name": self.name,
-            "vote_type": self.data.vote_type,
+            "event_type": self.event_type,
             "status": self.status,
             "total_votes": self.vote_count(),
             "end_time": self.end_time.map(|t| t.to_rfc3339()),
@@ -268,7 +286,6 @@ mod tests {
             cast_time: Utc::now().fixed_offset(),
             proxy: false,
             data: json!({
-                "vote_type": "motion",
                 "vote_response": responses
             }),
         }
@@ -277,7 +294,7 @@ mod tests {
     fn mock_event(votes_with_user: Vec<(vote::Model, Option<user::Model>)>) -> EventLoadStatic {
         EventLoadStatic {
             event_id: 1,
-            event_type: "vote".to_string(),
+            event_type: EventType::Motion,
             name: "Test Event".to_string(),
             status: "closed".to_string(),
             start_time: Utc::now().fixed_offset(),
@@ -285,10 +302,9 @@ mod tests {
             data: EventData {
                 description: "test description".to_string(),
                 session_code: "ABC123".to_string(),
-                vote_type: "motion".to_string(),
                 threshold: 0.75,
                 visibility: Visibility {
-                    participants: "live".to_string(),
+                    participants: ParticipantVisibility::Live,
                 },
                 proxy: false,
                 vote_options: vec!["yes".to_string(), "no".to_string()],
@@ -376,6 +392,18 @@ mod tests {
     }
 
     #[test]
+    fn test_export_result_json_preview() {
+        let votes = vec![
+            (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
+            (mock_vote(2, 1, 2, vec!["no"]), Some(mock_user(2, "Bob"))),
+            (mock_vote(3, 1, 3, vec!["yes"]), Some(mock_user(3, "Carol"))),
+        ];
+        let event = mock_event(votes);
+        let result = event.export_result_json();
+        println!("{}", serde_json::to_string_pretty(&result).unwrap());
+    }
+
+    #[test]
     fn test_export_result_json() {
         let votes = vec![
             (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
@@ -386,7 +414,6 @@ mod tests {
         let result = event.export_result_json();
 
         assert_eq!(result["event_name"], "Test Event");
-        assert_eq!(result["vote_type"], "motion");
         assert_eq!(result["status"], "closed");
         assert_eq!(result["total_votes"], 3);
         assert!(result["end_time"].is_null());
@@ -439,6 +466,19 @@ mod tests {
         let bytes = event.export_result_pdf();
         assert!(!bytes.is_empty());
         assert_eq!(&bytes[..4], b"%PDF");
+    }
+
+    #[test]
+    #[ignore = "preview only — writes pdf to /tmp and does not clean up"]
+    fn test_export_result_pdf_preview() {
+        let votes = vec![
+            (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
+            (mock_vote(2, 1, 2, vec!["no"]), Some(mock_user(2, "Bob"))),
+            (mock_vote(3, 1, 3, vec!["yes"]), Some(mock_user(3, "Carol"))),
+        ];
+        let event = mock_event(votes);
+        let bytes = event.export_result_pdf();
+        std::fs::write("/tmp/test_event_result.pdf", &bytes).expect("Failed to write PDF");
     }
 
     #[test]
