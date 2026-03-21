@@ -7,6 +7,36 @@
     import SessionCreation from "./screens/sessionCreation.svelte";
     import ResultsAdmin from "./screens/resultsAdmin.svelte";
     import ResultsVoter from "./screens/resultsVoter.svelte";
+    import { Event } from "./lib/models/Event";
+    import { User } from "./lib/models/User";
+
+    const API_BASE = import.meta.env.VITE_API_BASE || "";
+
+    let screen = $state("auth");
+    let currentUser = $state<User | null>(null);
+    let currentEvent = $state<Event | null>(null);
+
+    const fetchAttendance = async (sessionCode: string) => {
+        const response = await fetch(
+            `${API_BASE}/api/attendance/${sessionCode}`,
+            { cache: "no-store" },
+        );
+        if (!response.ok) {
+            throw new Error(`Failed to join event: ${response.status}`);
+        }
+        return await response.json();
+    };
+
+    const joinEvent = async (sessionCode: string) => {
+        try {
+            const data = await fetchAttendance(sessionCode);
+            // data currently returns organization_member — expand later
+            // when user + event endpoints exist
+            console.log("Joined:", data);
+        } catch (error) {
+            console.error(error);
+        }
+    };
 
     let bgDark = getComputedStyle(document.documentElement)
         .getPropertyValue("--colors-backgroundDark")
@@ -14,8 +44,6 @@
     let bgLight = getComputedStyle(document.documentElement)
         .getPropertyValue("--colors-background")
         .trim();
-
-    let screen = $state("auth");
 
     $effect(() => {
         if (screen === "auth") {
@@ -43,17 +71,25 @@
 {:else if screen === "join"}
     <div transition:slide>
         <JoinPage
+            {joinEvent}
             toVoter={() => (screen = "waiting")}
             toAdmin={() => (screen = "SessionCreation")}
         />
     </div>
 {:else if screen === "waiting"}
     <div transition:slide>
-        <WaitingPage onNext={() => (screen = "votingMotion")} />
+        <WaitingPage
+            event={currentEvent}
+            onNext={() => (screen = "votingMotion")}
+        />
     </div>
 {:else if screen === "votingMotion"}
     <div transition:slide>
-        <VotingMotion onNext={() => (screen = "ResultsVoter")} />
+        <VotingMotion
+            event={currentEvent}
+            user={currentUser}
+            onNext={() => (screen = "ResultsVoter")}
+        />
     </div>
 {:else if screen === "SessionCreation"}
     <div transition:slide>
@@ -68,16 +104,10 @@
     </div>
 {:else if screen === "ResultsVoter"}
     <div transition:slide>
-        <ResultsVoter onNext={() => (screen = "join")} />
+        <ResultsVoter
+            event={currentEvent}
+            user={currentUser}
+            onNext={() => (screen = "join")}
+        />
     </div>
 {/if}
-
-<style>
-    :global(body) {
-        transition: background-color 0.6s ease-in-out;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: 100%;
-    }
-</style>

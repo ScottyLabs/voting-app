@@ -10,13 +10,13 @@
 
     function user_new(): User {
         return {
-            user_id: 6767,
+            id: 6767,
             name: "",
-            created_time: "",
+            created_at: "",
         };
     }
 
-    function election_new(): Election {
+    function election_new(): Event {
         return {
             title: "",
             candidates: [],
@@ -30,7 +30,7 @@
         };
     }
 
-    function motion_new(): Motion {
+    function motion_new(): Event {
         return {
             num: 67,
             description: "",
