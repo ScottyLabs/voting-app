@@ -1,3 +1,5 @@
+use crate::AppState;
+use crate::core::auth::middleware::SyncedUser;
 use axum::{
     Json,
     extract::{Path, State},
@@ -5,14 +7,12 @@ use axum::{
     response::IntoResponse,
 };
 use chrono::Utc;
+use entity::enums::StatusOption;
 use entity::vote;
 use sea_orm::ActiveValue::Set;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use voting_app_store::Store;
-use entity::enums::StatusOption;
-use crate::AppState;
-use crate::core::auth::middleware::SyncedUser;
 
 #[derive(Debug, Deserialize)]
 pub struct CastVoteRequest {
@@ -41,15 +41,18 @@ pub async fn cast_vote(
     let event = match store.events().find_by_id(event_id).await {
         Ok(Some(e)) => e,
         Ok(None) => {
-            return (StatusCode::NOT_FOUND, Json(json!({"error": "Event not found"})))
-                .into_response()
+            return (
+                StatusCode::NOT_FOUND,
+                Json(json!({"error": "Event not found"})),
+            )
+                .into_response();
         }
         Err(_) => {
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(json!({"error": "Database error"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -64,7 +67,8 @@ pub async fn cast_vote(
             .into_response();
     }
 
-    if event.status != StatusOption::Active { //CHANGE THIS WHEN YIYOUNG CHANGES TO ENUM  
+    if event.status != StatusOption::Active {
+        //CHANGE THIS WHEN YIYOUNG CHANGES TO ENUM
         return (
             StatusCode::BAD_REQUEST,
             Json(json!({"error": "Event is not open"})),
@@ -139,15 +143,18 @@ pub async fn get_motion_results(
     let event = match store.events().find_by_id(event_id).await {
         Ok(Some(e)) => e,
         Ok(None) => {
-            return (StatusCode::NOT_FOUND, Json(json!({"error": "Event not found"})))
-                .into_response()
+            return (
+                StatusCode::NOT_FOUND,
+                Json(json!({"error": "Event not found"})),
+            )
+                .into_response();
         }
         Err(_) => {
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(json!({"error": "Database error"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -163,7 +170,9 @@ pub async fn get_motion_results(
     }
 
     //Place holder for when we figure the visibility out
-    let visibility = event_data["visibility"]["participants"].as_str().unwrap_or("");
+    let visibility = event_data["visibility"]["participants"]
+        .as_str()
+        .unwrap_or("");
     if visibility == "hidden_until_release" && event.status != StatusOption::Inactive {
         return (
             StatusCode::FORBIDDEN,
@@ -179,7 +188,7 @@ pub async fn get_motion_results(
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(json!({"error": "Database error"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -202,7 +211,7 @@ pub async fn get_motion_results(
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(json!({"error": "Unrecognized vote option in database"})),
                 )
-                    .into_response()
+                    .into_response();
             }
         }
     }
