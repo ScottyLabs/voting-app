@@ -1,4 +1,8 @@
 mod handlers;
+mod config;
+mod core;
+mod domain;
+mod server;
 mod static_event_reader;
 
 use axum::{Router, routing::get};
@@ -7,9 +11,16 @@ use migration::{Migrator, MigratorTrait};
 use sea_orm_migration::DbErr;
 use std::env;
 use voting_app_store::Store;
+use sea_orm::DatabaseConnection;
+
+#[derive(Clone)]
+pub struct AppState {
+    pub db: DatabaseConnection,
+    pub config: config::Config,
+}
 
 #[tokio::main]
-async fn main() -> Result<(), DbErr> {
+async fn main() {
     dotenv().ok();
 
     let db_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
@@ -35,4 +46,6 @@ async fn main() -> Result<(), DbErr> {
     axum::serve(listener, app).await.expect("Server error");
 
     Ok(())
+    tracing_subscriber::fmt::init();
+    server::setup().await;
 }
