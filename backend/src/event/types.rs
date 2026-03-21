@@ -137,6 +137,10 @@ fn validate_attendance_data(data: &AttendanceEventData) -> Result<(), String> {
 }
 
 fn validate_motion_data(data: &MotionEventData) -> Result<(), String> {
+    validate_non_empty(
+        &data.description,
+        "event.data.motion.description cannot be empty",
+    )?;
     validate_threshold(data.threshold, "event.data.motion.threshold")?;
     validate_non_empty(
         &data.visibility.participants,

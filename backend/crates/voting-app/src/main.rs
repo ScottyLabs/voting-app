@@ -1,21 +1,21 @@
+mod config;
+mod core;
+mod domain;
+mod server;
 mod static_event_reader;
 
 use dotenvy::dotenv;
-use migration::{Migrator, MigratorTrait};
-use sea_orm_migration::DbErr;
-use std::env;
+use sea_orm::DatabaseConnection;
+
+#[derive(Clone)]
+pub struct AppState {
+    pub db: DatabaseConnection,
+    pub config: config::Config,
+}
 
 #[tokio::main]
-async fn main() -> Result<(), DbErr> {
+async fn main() {
     dotenv().ok();
-
-    let db_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let connection = sea_orm::Database::connect(&db_url).await?;
-
-    // This applies all pending migrations
-    Migrator::up(&connection, None).await?;
-    println!("Migration Complete!");
-
-    // Start your server logic...
-    Ok(())
+    tracing_subscriber::fmt::init();
+    server::setup().await;
 }

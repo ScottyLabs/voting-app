@@ -8,7 +8,7 @@ Voting App is a CMU Undergraduate Senate-commissioned, ScottyLabs-developed voti
 - PostgreSQL
 
 ## Assumptions about the reader
-Hello, reader! For the remainder of this README, and other documentation, we will assume that you are a developer or contributor, using WSL or a Unix development system, and have some familiarity with the command line. If you need any help, you are free to contact one of the codeowners found in .github/CODEOWNERS, or join the [discord](go.scottylabs.org/discord).
+Hello, reader! For the remainder of this README, and other documentation, we will assume that you are a developer or contributor, using WSL or a Unix development system, and have some familiarity with the command line. If you need any help, you are free to contact one of the codeowners found in .github/CODEOWNERS, or join the [discord](https://go.scottylabs.org/discord).
 
 ## Getting Started
 
