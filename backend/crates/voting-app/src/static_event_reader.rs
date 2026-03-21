@@ -1,5 +1,5 @@
 // Loads event + votes into memory once. Useful for repeated reads (export, statistics)
-// without re-querying the DB. Consider caching for closed events. 
+// without re-querying the DB. Consider caching for closed events.
 use chrono::{DateTime, FixedOffset};
 use entity::event::Entity as Event;
 use entity::user::{self, Entity as User};
@@ -8,7 +8,6 @@ use genpdf::elements::FrameCellDecorator;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, LoaderTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-
 
 use entity::enums::EventType;
 use entity::enums::StatusOption;
@@ -45,7 +44,7 @@ struct Visibility {
 struct EventData {
     description: String,
     session_code: String,
-    threshold: f64,    // approval threshold e.g. 0.75 = 75%
+    threshold: f64, // approval threshold e.g. 0.75 = 75%
     visibility: Visibility,
     proxy: bool,
     vote_options: Vec<String>,
@@ -247,7 +246,11 @@ impl EventLoadStatic {
                     ordinal(rank + 1)
                 )));
                 for (option, count) in counts {
-                    let pct = if rank_total > 0 { count * 100 / rank_total } else { 0 };
+                    let pct = if rank_total > 0 {
+                        count * 100 / rank_total
+                    } else {
+                        0
+                    };
                     doc.push(genpdf::elements::Paragraph::new(format!(
                         "  {}: {} ({}%)",
                         option, count, pct
@@ -321,7 +324,11 @@ impl EventLoadStatic {
                     let results: serde_json::Map<String, serde_json::Value> = counts
                         .into_iter()
                         .map(|(option, count)| {
-                            let pct = if rank_total > 0 { count * 100 / rank_total } else { 0 };
+                            let pct = if rank_total > 0 {
+                                count * 100 / rank_total
+                            } else {
+                                0
+                            };
                             (option, serde_json::json!({ "count": count, "pct": pct }))
                         })
                         .collect();
@@ -480,9 +487,18 @@ mod tests {
     #[test]
     fn test_get_ranked_statistics() {
         let votes = vec![
-            (mock_vote(1, 1, 1, vec!["Alice", "Bob", "Carol"]), Some(mock_user(1, "Voter1"))),
-            (mock_vote(2, 1, 2, vec!["Bob", "Alice", "Carol"]), Some(mock_user(2, "Voter2"))),
-            (mock_vote(3, 1, 3, vec!["Alice", "Carol", "Bob"]), Some(mock_user(3, "Voter3"))),
+            (
+                mock_vote(1, 1, 1, vec!["Alice", "Bob", "Carol"]),
+                Some(mock_user(1, "Voter1")),
+            ),
+            (
+                mock_vote(2, 1, 2, vec!["Bob", "Alice", "Carol"]),
+                Some(mock_user(2, "Voter2")),
+            ),
+            (
+                mock_vote(3, 1, 3, vec!["Alice", "Carol", "Bob"]),
+                Some(mock_user(3, "Voter3")),
+            ),
         ];
         let event = mock_event_typed(votes, EventType::Election);
         let ranked = event.get_ranked_statistics();
@@ -509,9 +525,18 @@ mod tests {
     #[test]
     fn test_export_result_json_election() {
         let votes = vec![
-            (mock_vote(1, 1, 1, vec!["Alice", "Bob"]), Some(mock_user(1, "Voter1"))),
-            (mock_vote(2, 1, 2, vec!["Alice", "Bob"]), Some(mock_user(2, "Voter2"))),
-            (mock_vote(3, 1, 3, vec!["Bob", "Alice"]), Some(mock_user(3, "Voter3"))),
+            (
+                mock_vote(1, 1, 1, vec!["Alice", "Bob"]),
+                Some(mock_user(1, "Voter1")),
+            ),
+            (
+                mock_vote(2, 1, 2, vec!["Alice", "Bob"]),
+                Some(mock_user(2, "Voter2")),
+            ),
+            (
+                mock_vote(3, 1, 3, vec!["Bob", "Alice"]),
+                Some(mock_user(3, "Voter3")),
+            ),
         ];
         let event = mock_event_typed(votes, EventType::Election);
         let result = event.export_result_json();
@@ -531,10 +556,22 @@ mod tests {
     fn test_export_result_json_election_pct() {
         // 4 voters: Alice gets 3 first-choice votes (75%), Bob gets 1 (25%)
         let votes = vec![
-            (mock_vote(1, 1, 1, vec!["Alice", "Bob"]), Some(mock_user(1, "Voter1"))),
-            (mock_vote(2, 1, 2, vec!["Alice", "Bob"]), Some(mock_user(2, "Voter2"))),
-            (mock_vote(3, 1, 3, vec!["Alice", "Bob"]), Some(mock_user(3, "Voter3"))),
-            (mock_vote(4, 1, 4, vec!["Bob", "Alice"]), Some(mock_user(4, "Voter4"))),
+            (
+                mock_vote(1, 1, 1, vec!["Alice", "Bob"]),
+                Some(mock_user(1, "Voter1")),
+            ),
+            (
+                mock_vote(2, 1, 2, vec!["Alice", "Bob"]),
+                Some(mock_user(2, "Voter2")),
+            ),
+            (
+                mock_vote(3, 1, 3, vec!["Alice", "Bob"]),
+                Some(mock_user(3, "Voter3")),
+            ),
+            (
+                mock_vote(4, 1, 4, vec!["Bob", "Alice"]),
+                Some(mock_user(4, "Voter4")),
+            ),
         ];
         let event = mock_event_typed(votes, EventType::Election);
         let result = event.export_result_json();
@@ -551,8 +588,14 @@ mod tests {
     fn test_get_ranked_statistics_unequal_lengths() {
         // voter1 ranks 3, voter2 ranks only 1
         let votes = vec![
-            (mock_vote(1, 1, 1, vec!["Alice", "Bob", "Carol"]), Some(mock_user(1, "Voter1"))),
-            (mock_vote(2, 1, 2, vec!["Bob"]), Some(mock_user(2, "Voter2"))),
+            (
+                mock_vote(1, 1, 1, vec!["Alice", "Bob", "Carol"]),
+                Some(mock_user(1, "Voter1")),
+            ),
+            (
+                mock_vote(2, 1, 2, vec!["Bob"]),
+                Some(mock_user(2, "Voter2")),
+            ),
         ];
         let event = mock_event(votes);
         let ranked = event.get_ranked_statistics();
@@ -568,8 +611,14 @@ mod tests {
     #[ignore = "requires LiberationSans font files in ./fonts directory"]
     fn test_export_result_pdf_election_returns_bytes() {
         let votes = vec![
-            (mock_vote(1, 1, 1, vec!["Alice", "Bob", "Carol"]), Some(mock_user(1, "Voter1"))),
-            (mock_vote(2, 1, 2, vec!["Bob", "Alice", "Carol"]), Some(mock_user(2, "Voter2"))),
+            (
+                mock_vote(1, 1, 1, vec!["Alice", "Bob", "Carol"]),
+                Some(mock_user(1, "Voter1")),
+            ),
+            (
+                mock_vote(2, 1, 2, vec!["Bob", "Alice", "Carol"]),
+                Some(mock_user(2, "Voter2")),
+            ),
         ];
         let event = mock_event_typed(votes, EventType::Election);
         let bytes = event.export_result_pdf();
@@ -674,10 +723,22 @@ mod tests {
     #[ignore = "preview only — writes pdf to /tmp and does not clean up"]
     fn test_export_result_pdf_preview_election() {
         let votes = vec![
-            (mock_vote(1, 1, 1, vec!["Alice", "Bob", "Carol"]), Some(mock_user(1, "Voter1"))),
-            (mock_vote(2, 1, 2, vec!["Bob", "Alice", "Carol"]), Some(mock_user(2, "Voter2"))),
-            (mock_vote(3, 1, 3, vec!["Alice", "Carol", "Bob"]), Some(mock_user(3, "Voter3"))),
-            (mock_vote(4, 1, 4, vec!["Carol", "Alice", "Bob"]), Some(mock_user(4, "Voter4"))),
+            (
+                mock_vote(1, 1, 1, vec!["Alice", "Bob", "Carol"]),
+                Some(mock_user(1, "Voter1")),
+            ),
+            (
+                mock_vote(2, 1, 2, vec!["Bob", "Alice", "Carol"]),
+                Some(mock_user(2, "Voter2")),
+            ),
+            (
+                mock_vote(3, 1, 3, vec!["Alice", "Carol", "Bob"]),
+                Some(mock_user(3, "Voter3")),
+            ),
+            (
+                mock_vote(4, 1, 4, vec!["Carol", "Alice", "Bob"]),
+                Some(mock_user(4, "Voter4")),
+            ),
         ];
         let event = mock_event_typed(votes, EventType::Election);
         let bytes = event.export_result_pdf();
