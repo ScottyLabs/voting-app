@@ -209,7 +209,7 @@ pub async fn get_motion_results(
 
     let total = pass + reject + abstain;
     let threshold = event_data["threshold"].as_f64().unwrap_or(0.5);
-    let passed = total > 0 && (pass as f64 / (pass + reject) as f64) >= threshold;
+    let passed = total > 0 && (pass as f64 / (pass + reject) as f64) > threshold;
 
     (
         StatusCode::OK,
