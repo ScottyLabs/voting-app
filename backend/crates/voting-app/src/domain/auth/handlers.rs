@@ -1,7 +1,7 @@
 use axum::{
     Json,
     extract::{Query, State},
-    response::{IntoResponse, Redirect},
+    response::{Html, IntoResponse, Redirect},
 };
 use axum_oidc::{EmptyAdditionalClaims, OidcClaims, OidcRpInitiatedLogout};
 use http::Uri;
@@ -75,4 +75,35 @@ pub async fn auth_status(user: Option<OidcClaims<EmptyAdditionalClaims>>) -> imp
         user_id: None,
     };
     Json(payload)
+}
+
+pub async fn demo_home(State(state): State<AppState>) -> impl IntoResponse {
+    let base = state.config.app_base_url.trim_end_matches('/');
+    let html = format!(
+        "<!doctype html>
+<html>
+    <head>
+        <meta charset=\"utf-8\" />
+        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+        <title>Voting App Backend Demo</title>
+    </head>
+    <body>
+        <ul>
+            <li><a href=\"{base}/auth/login\">Login</a></li>
+            <li><a href=\"{base}/auth/logout\">Logout</a></li>
+            <li><a href=\"{base}/auth/status\">Auth Status (JSON)</a></li>
+            <li><a href=\"{base}/health\">Health</a></li>
+        </ul>
+    </body>
+</html>"
+    );
+
+    Html(html)
+}
+
+pub async fn demo_not_found() -> impl IntoResponse {
+    (
+        axum::http::StatusCode::NOT_FOUND,
+        Html("<!doctype html><html><body><h1>Not Found</h1></body></html>"),
+    )
 }

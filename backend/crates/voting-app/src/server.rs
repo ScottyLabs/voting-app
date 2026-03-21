@@ -76,6 +76,7 @@ pub async fn setup() {
         .layer(oidc_login_service.clone());
 
     let api_router = Router::new()
+        .route("/", get(crate::domain::auth::handlers::demo_home)) // demo only
         .route("/auth/login", get(crate::domain::auth::handlers::login))
         .merge(protected_auth_router)
         .route(
@@ -83,6 +84,7 @@ pub async fn setup() {
             get(crate::domain::auth::handlers::auth_status),
         )
         .route("/health", get(|| async { "OK" }))
+        .fallback(get(crate::domain::auth::handlers::demo_not_found)) // demo only
         .layer(oidc_auth_service)
         .layer(session_layer)
         .with_state(app_state);
