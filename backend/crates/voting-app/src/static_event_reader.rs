@@ -8,8 +8,10 @@ use genpdf::elements::FrameCellDecorator;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, LoaderTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use entity::event::EventType;
 
+
+use entity::enums::EventType;
+use entity::enums::StatusOption;
 // #[derive(Deserialize, Serialize, PartialEq)]
 // #[serde(rename_all = "lowercase")]
 // enum EventType {
@@ -54,7 +56,7 @@ struct EventLoadStatic {
     event_id: i32,
     event_type: EventType,
     name: String,
-    status: String,
+    status: StatusOption,
     start_time: DateTime<FixedOffset>, //timestamp with timezone
     end_time: Option<DateTime<FixedOffset>>, //nullable timestamp
     data: EventData,                   //parsed event.data JSON
@@ -373,7 +375,7 @@ mod tests {
             event_id: 1,
             event_type: EventType::Motion,
             name: "Test Event".to_string(),
-            status: "closed".to_string(),
+            status: StatusOption::Active,
             start_time: Utc::now().fixed_offset(),
             end_time: None,
             data: EventData {
@@ -595,7 +597,8 @@ mod tests {
         let result = event.export_result_json();
 
         assert_eq!(result["event_name"], "Test Event");
-        assert_eq!(result["status"], "closed");
+        assert_eq!(result["event_type"], "Motion");
+        assert_eq!(result["status"], "Active");
         assert_eq!(result["total_votes"], 3);
         assert!(result["end_time"].is_null());
         assert_eq!(result["statistics"]["yes"]["count"], 2);
