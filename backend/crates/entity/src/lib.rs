@@ -2,6 +2,7 @@
 
 pub mod prelude;
 
+pub mod enums;
 pub mod event;
 pub mod organization;
 pub mod organization_member;
