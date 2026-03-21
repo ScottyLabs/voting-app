@@ -5,5 +5,6 @@ pub mod prelude;
 pub mod event;
 pub mod organization;
 pub mod organization_member;
+pub mod sea_orm_active_enums;
 pub mod user;
 pub mod vote;
