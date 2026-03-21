@@ -27,14 +27,20 @@
         return await response.json();
     };
 
+    let joinError = $state<string | null>(null);
+    let joining = $state(false);
+
     const joinEvent = async (sessionCode: string) => {
+        joining = true;
+        joinError = null;
         try {
             const data = await fetchAttendance(sessionCode);
-            // data currently returns organization_member — expand later
-            // when user + event endpoints exist
-            console.log("Joined:", data);
+            // valid session code — navigate to waiting
+            screen = "waiting";
         } catch (error) {
-            console.error(error);
+            joinError = "Invalid session code. Please try again.";
+        } finally {
+            joining = false;
         }
     };
 
@@ -72,6 +78,8 @@
     <div transition:slide>
         <JoinPage
             {joinEvent}
+            {joinError}
+            {joining}
             toVoter={() => (screen = "waiting")}
             toAdmin={() => (screen = "SessionCreation")}
         />

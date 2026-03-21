@@ -1,17 +1,23 @@
 <script lang="ts">
-    let { onNext } = $props();
+    import { Event } from "../lib/models/Event";
+    import { User } from "../lib/models/User";
 
-    let ballot: Ballot = {
-        name: "Ballot Name",
-        start_time: "",
-        end_time: "",
-        vote_type: "",
-    };
+    let {
+        event,
+        user,
+        onNext,
+    }: {
+        event: Event | null;
+        user: User | null;
+        onNext: () => void;
+    } = $props();
 
-    let motion: string = $state("Motion description here");
+    let ballot = $state({
+        vote_response: "",
+    });
 
-    function vote(event: Event) {
-        event.preventDefault();
+    function vote(e: SubmitEvent) {
+        e.preventDefault();
         onNext?.();
     }
 
@@ -25,11 +31,13 @@
     <div class="card">
         <h2>Vote on Current Motion</h2>
         <hr />
-        <blockquote class="quote">{motion}</blockquote>
+        <blockquote class="quote">
+            {event?.isMotion ? "No Motion" : event?.data}
+        </blockquote>
         <form onsubmit={vote}>
             <label>
                 <h3>Concerning this motion I vote...</h3>
-                <select bind:value={ballot.vote_type} required>
+                <select bind:value={ballot.vote_response} required>
                     <option value="" disabled>Select one...</option>
                     {#each ["Pass", "Reject", "Abstain"] as option}
                         <option value={option}>{option}</option>

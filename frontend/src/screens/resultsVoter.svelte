@@ -1,5 +1,15 @@
 <script lang="ts">
-    let { onNext } = $props();
+    import { Event } from "./../lib/models/Event";
+    import { User } from "./../lib/models/User";
+    let {
+        event,
+        user,
+        onNext,
+    }: {
+        event: Event | null;
+        user: User | null;
+        onNext: () => void;
+    } = $props();
 
     // Percent values (TO BE CONNECTED TO API)
     let percentAbst: number = 10;

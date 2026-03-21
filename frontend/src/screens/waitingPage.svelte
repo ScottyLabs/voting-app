@@ -1,5 +1,5 @@
 <script>
-    let { onNext } = $props();
+    let { onNext, event } = $props();
 
     function handleClick() {
         onNext();
