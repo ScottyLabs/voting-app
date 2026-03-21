@@ -41,9 +41,11 @@ pub async fn logout(
     logout: OidcRpInitiatedLogout,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
+    let post_logout_redirect = format!("{}/", state.config.app_base_url.trim_end_matches('/'));
+
     logout
         .with_post_logout_redirect(
-            Uri::from_maybe_shared(state.config.app_base_url.clone()).expect("valid APP_BASE_URL"),
+            Uri::from_maybe_shared(post_logout_redirect).expect("valid APP_BASE_URL"),
         )
         .into_response()
 }
