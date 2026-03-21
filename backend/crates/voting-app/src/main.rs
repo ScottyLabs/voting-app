@@ -1,17 +1,16 @@
-mod handlers;
 mod config;
 mod core;
 mod domain;
+mod handlers;
 mod server;
 mod static_event_reader;
 
 use axum::{Router, routing::get};
 use dotenvy::dotenv;
 use migration::{Migrator, MigratorTrait};
-use sea_orm_migration::DbErr;
+use sea_orm::DatabaseConnection;
 use std::env;
 use voting_app_store::Store;
-use sea_orm::DatabaseConnection;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -26,7 +25,7 @@ async fn main() {
     let db_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let db = sea_orm::Database::connect(&db_url).await?;
 
-    Migrator::up(&db, None).await?;
+    Migrator::up(&db, None).await;
     println!("Migration complete!");
 
     let store = Store::new(db);
@@ -45,7 +44,6 @@ async fn main() {
     println!("Listening on http://0.0.0.0:3000");
     axum::serve(listener, app).await.expect("Server error");
 
-    Ok(())
     tracing_subscriber::fmt::init();
     server::setup().await;
 }
