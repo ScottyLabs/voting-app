@@ -7,6 +7,10 @@
     import TimeScroller from "../lib/components/timeScroller.svelte";
     import HoverCard from "../lib/components/hoverCard.svelte";
     let { onNext, onBack } = $props();
+    const env = import.meta.env as Record<string, string | undefined>;
+    const backendBaseUrl = (env.VITE_BACKEND_URL ?? env.BACKEND_URL ?? "")
+        .trim()
+        .replace(/\/+$/, "");
 
     function user_new(): User {
         return {
@@ -104,6 +108,9 @@
     let timerEnded = $state(false);
 
     let voteThresholds: string[] = ["Majority", "2/3", "3/4", "Unanimous"];
+    let creatingMotionRequest = $state(false);
+    let creatingElectionRequest = $state(false);
+    let createError = $state<string | null>(null);
 
     function deleteUser(i: number) {
         Users.splice(i, 1);
@@ -128,6 +135,7 @@
         creatingMotion = false;
         inspectingAllUsers = false;
         timerEnded = false;
+        createError = null;
     }
 
     function inspectUser(user: User) {
@@ -142,6 +150,138 @@
 
     function endTimer() {
         timerEnded = true;
+    }
+
+    function thresholdToDecimal(label: string): number {
+        switch (label) {
+            case "2/3":
+                return 2 / 3;
+            case "3/4":
+                return 3 / 4;
+            case "Unanimous":
+                return 1;
+            case "Majority":
+            default:
+                return 0.5;
+        }
+    }
+
+    function timerToEndTime(timer: {
+        days: number;
+        hours: number;
+        mins: number;
+        secs: number;
+    }): string | undefined {
+        const totalSeconds =
+            timer.days * 24 * 60 * 60 +
+            timer.hours * 60 * 60 +
+            timer.mins * 60 +
+            timer.secs;
+        if (totalSeconds <= 0) return undefined;
+        return new Date(Date.now() + totalSeconds * 1000).toISOString();
+    }
+
+    async function readErrorMessage(response: Response): Promise<string> {
+        try {
+            const json = (await response.json()) as { error?: string };
+            return json.error ?? `Request failed with status ${response.status}`;
+        } catch {
+            return `Request failed with status ${response.status}`;
+        }
+    }
+
+    async function createEvent(payload: unknown): Promise<void> {
+        if (!backendBaseUrl) {
+            throw new Error(
+                "BACKEND_URL is missing. Set VITE_BACKEND_URL (or BACKEND_URL) in frontend env.",
+            );
+        }
+
+        // Backend route from backend/src/event/router.rs: POST /api/event/create
+        const response = await fetch(`${backendBaseUrl}/api/event/create`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            throw new Error(await readErrorMessage(response));
+        }
+    }
+
+    async function submitMotion(event: Event) {
+        event.preventDefault();
+        createError = null;
+        creatingMotionRequest = true;
+
+        try {
+            const payload = {
+                event_type: "motion",
+                name: `Motion #${motion.num}`,
+                created_by_user_id: Users[0]?.user_id ?? 1,
+                organization_id: 1,
+                end_time: timerToEndTime(motion.timer),
+                data: {
+                    motion: {
+                        description: motion.description.trim(),
+                        threshold: thresholdToDecimal(motion.threshold),
+                        visibility: { participants: "hidden_until_release" },
+                        proxy: false,
+                        vote_options: ["yes", "no", "abstain"],
+                    },
+                },
+            };
+
+            await createEvent(payload);
+            creatingMotion = false;
+        } catch (error) {
+            createError =
+                error instanceof Error
+                    ? error.message
+                    : "Unable to create motion.";
+        } finally {
+            creatingMotionRequest = false;
+        }
+    }
+
+    async function submitElection(event: Event) {
+        event.preventDefault();
+        createError = null;
+        creatingElectionRequest = true;
+
+        try {
+            const voteOptions = election.candidates
+                .map((candidate) => candidate.trim())
+                .filter((candidate) => candidate.length > 0);
+
+            const payload = {
+                event_type: "vote",
+                name: election.title.trim() || "Election",
+                created_by_user_id: Users[0]?.user_id ?? 1,
+                organization_id: 1,
+                end_time: timerToEndTime(election.timer),
+                data: {
+                    vote: {
+                        description: election.title.trim() || "Election",
+                        vote_type: "election",
+                        threshold: 0.5,
+                        visibility: { participants: "hidden_until_release" },
+                        proxy: false,
+                        vote_options: voteOptions,
+                    },
+                },
+            };
+
+            await createEvent(payload);
+            creatingElection = false;
+        } catch (error) {
+            createError =
+                error instanceof Error
+                    ? error.message
+                    : "Unable to create election.";
+        } finally {
+            creatingElectionRequest = false;
+        }
     }
 
     // TODO: after backend exists it can pass on live results to here
@@ -212,7 +352,7 @@
     open={creatingMotion}
     onClose={onPopupClose}
 >
-    <form onsubmit={onPopupClose}>
+    <form onsubmit={submitMotion}>
         <LongTextInput
             title="Description:"
             bind:value={motion.description}
@@ -238,12 +378,17 @@
 
         <TimeScroller value={motion.timer}></TimeScroller>
 
-        <button type="submit" class="submitBtn">Push Motion</button>
+        <button type="submit" class="submitBtn" disabled={creatingMotionRequest}
+            >{creatingMotionRequest ? "Creating..." : "Push Motion"}</button
+        >
+        {#if createError}
+            <p class="errorText">{createError}</p>
+        {/if}
     </form>
 </Popup>
 
 <Popup title={election.title} open={creatingElection} onClose={onPopupClose}>
-    <form onsubmit={onPopupClose}>
+    <form onsubmit={submitElection}>
         <label>
             <h3>Title:</h3>
             <input type="text" bind:value={election.title} required />
@@ -260,7 +405,15 @@
 
         <TimeScroller bind:value={election.timer}></TimeScroller>
 
-        <button type="submit" class="submitBtn">Push Election</button>
+        <button
+            type="submit"
+            class="submitBtn"
+            disabled={creatingElectionRequest}
+            >{creatingElectionRequest ? "Creating..." : "Push Election"}</button
+        >
+        {#if createError}
+            <p class="errorText">{createError}</p>
+        {/if}
     </form>
 </Popup>
 
@@ -490,5 +643,16 @@
         font-size: 20px;
         padding: 10px 140px;
         cursor: pointer;
+    }
+
+    .submitBtn:disabled {
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+
+    .errorText {
+        margin: 0.5rem 0 0;
+        color: #d92d20;
+        font-size: 0.9rem;
     }
 </style>
