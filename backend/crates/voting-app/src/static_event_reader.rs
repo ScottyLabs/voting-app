@@ -2,10 +2,11 @@
 // without re-querying the DB. Consider caching for closed events.
 use chrono::{DateTime, FixedOffset};
 use entity::event::Entity as Event;
-use entity::user::{self, Entity as User};
+use entity::user;
 use entity::vote::{self, Entity as Vote};
+use entity::voter;
 use genpdf::elements::FrameCellDecorator;
-use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, LoaderTrait, QueryFilter};
+use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -61,9 +62,9 @@ struct EventLoadStatic {
     data: EventData,                   //parsed event.data JSON
     created_by_user_id: i32,
     organization_id: i32,
-    votes_with_user: Vec<(vote::Model, Option<user::Model>)>,
-    // list of tuples. Each vote paired with its user.
-    //For now, user might be Null
+    votes_with_user: Vec<(vote::Model, Option<voter::Model>, Option<user::Model>)>,
+    // list of tuples. Each vote paired with its voter and user.
+    //For now, voter and user might be Null
 }
 
 impl EventLoadStatic {
@@ -71,15 +72,38 @@ impl EventLoadStatic {
     async fn new(event_id: i32, db: &DatabaseConnection) -> Option<Self> {
         let event = Event::find_by_id(event_id).one(db).await.ok()??;
 
-        let votes = Vote::find()
-            .filter(vote::Column::EventId.eq(event_id))
+        let votes_with_voters = Vote::find()
+            .find_also_related(voter::Entity)
+            .filter(voter::Column::EventId.eq(event_id))
             .all(db)
             .await
             .ok()?;
 
-        let users = votes.load_one(User, db).await.ok()?;
-        let votes_with_user = votes.into_iter().zip(users.into_iter()).collect();
-        //parse event.data (JSON)
+        // Load all users referenced by these voters
+        let user_ids: Vec<i32> = votes_with_voters
+            .iter()
+            .filter_map(|(_, voter)| voter.as_ref().map(|v| v.voter_id))
+            .collect();
+
+        let users: std::collections::HashMap<i32, user::Model> = user::Entity::find()
+            .filter(user::Column::Id.is_in(user_ids))
+            .all(db)
+            .await
+            .ok()?
+            .into_iter()
+            .map(|u| (u.id, u))
+            .collect();
+
+        // Build the final tuples with vote, voter, and user
+        let votes_with_user: Vec<(vote::Model, Option<voter::Model>, Option<user::Model>)> =
+            votes_with_voters
+                .into_iter()
+                .map(|(vote, voter)| {
+                    let user = voter.as_ref().and_then(|v| users.get(&v.voter_id).cloned());
+                    (vote, voter, user)
+                })
+                .collect();
+
         let data: EventData = serde_json::from_value(event.data).ok()?;
         Some(EventLoadStatic {
             event_id: event.id,
@@ -103,7 +127,7 @@ impl EventLoadStatic {
     fn get_voters(&self) -> Vec<&user::Model> {
         self.votes_with_user
             .iter()
-            .filter_map(|(_, user)| user.as_ref())
+            .filter_map(|(_, _, user)| user.as_ref())
             .collect()
     }
 
@@ -112,7 +136,7 @@ impl EventLoadStatic {
     fn get_event_result(&self) -> Vec<VoteResult> {
         self.votes_with_user
             .iter()
-            .filter_map(|(vote, user)| {
+            .filter_map(|(vote, _, user)| {
                 //vote : vote::Model, user : Option<user::Model>
                 let user = user.as_ref()?;
                 let vote_response = vote
@@ -364,25 +388,33 @@ mod tests {
         }
     }
 
-    fn mock_vote(id: i32, event_id: i32, voter_id: i32, responses: Vec<&str>) -> vote::Model {
+    fn mock_vote(id: i32, responses: Vec<&str>) -> vote::Model {
         vote::Model {
             id,
-            event_id,
-            voter_id,
             cast_time: Utc::now().fixed_offset(),
-            proxy: false,
             data: json!({
                 "vote_response": responses
             }),
         }
     }
 
-    fn mock_event(votes_with_user: Vec<(vote::Model, Option<user::Model>)>) -> EventLoadStatic {
+    fn mock_voter(id: i32, event_id: i32, voter_id: i32) -> voter::Model {
+        voter::Model {
+            id,
+            event_id,
+            voter_id,
+            proxy: None,
+        }
+    }
+
+    fn mock_event(
+        votes_with_user: Vec<(vote::Model, Option<voter::Model>, Option<user::Model>)>,
+    ) -> EventLoadStatic {
         mock_event_typed(votes_with_user, EventType::Motion)
     }
 
     fn mock_event_typed(
-        votes_with_user: Vec<(vote::Model, Option<user::Model>)>,
+        votes_with_user: Vec<(vote::Model, Option<voter::Model>, Option<user::Model>)>,
         event_type: EventType,
     ) -> EventLoadStatic {
         EventLoadStatic {
@@ -417,8 +449,16 @@ mod tests {
     #[test]
     fn test_vote_count() {
         let votes = vec![
-            (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
-            (mock_vote(2, 1, 2, vec!["no"]), Some(mock_user(2, "Bob"))),
+            (
+                mock_vote(1, vec!["yes"]),
+                Some(mock_voter(1, 1, 1)),
+                Some(mock_user(1, "Alice")),
+            ),
+            (
+                mock_vote(2, vec!["no"]),
+                Some(mock_voter(2, 1, 2)),
+                Some(mock_user(2, "Bob")),
+            ),
         ];
         let event = mock_event(votes);
         assert_eq!(event.vote_count(), 2);
@@ -427,8 +467,12 @@ mod tests {
     #[test]
     fn test_get_voters() {
         let votes = vec![
-            (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
-            (mock_vote(2, 1, 2, vec!["no"]), None), // no user
+            (
+                mock_vote(1, vec!["yes"]),
+                Some(mock_voter(1, 1, 1)),
+                Some(mock_user(1, "Alice")),
+            ),
+            (mock_vote(2, vec!["no"]), Some(mock_voter(2, 1, 2)), None), // no user
         ];
         let event = mock_event(votes);
         let voters = event.get_voters();
@@ -439,8 +483,16 @@ mod tests {
     #[test]
     fn test_get_event_result() {
         let votes = vec![
-            (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
-            (mock_vote(2, 1, 2, vec!["no"]), Some(mock_user(2, "Bob"))),
+            (
+                mock_vote(1, vec!["yes"]),
+                Some(mock_voter(1, 1, 1)),
+                Some(mock_user(1, "Alice")),
+            ),
+            (
+                mock_vote(2, vec!["no"]),
+                Some(mock_voter(2, 1, 2)),
+                Some(mock_user(2, "Bob")),
+            ),
         ];
         let event = mock_event(votes);
         let results = event.get_event_result();
@@ -455,8 +507,12 @@ mod tests {
     #[test]
     fn test_get_event_result_skips_missing_user() {
         let votes = vec![
-            (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
-            (mock_vote(2, 1, 2, vec!["no"]), None), // skipped
+            (
+                mock_vote(1, vec!["yes"]),
+                Some(mock_voter(1, 1, 1)),
+                Some(mock_user(1, "Alice")),
+            ),
+            (mock_vote(2, vec!["no"]), Some(mock_voter(2, 1, 2)), None), // skipped
         ];
         let event = mock_event(votes);
         let results = event.get_event_result();
@@ -466,9 +522,21 @@ mod tests {
     #[test]
     fn test_get_vote_statistics() {
         let votes = vec![
-            (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
-            (mock_vote(2, 1, 2, vec!["yes"]), Some(mock_user(2, "Bob"))),
-            (mock_vote(3, 1, 3, vec!["no"]), Some(mock_user(3, "Carol"))),
+            (
+                mock_vote(1, vec!["yes"]),
+                Some(mock_voter(1, 1, 1)),
+                Some(mock_user(1, "Alice")),
+            ),
+            (
+                mock_vote(2, vec!["yes"]),
+                Some(mock_voter(2, 1, 2)),
+                Some(mock_user(2, "Bob")),
+            ),
+            (
+                mock_vote(3, vec!["no"]),
+                Some(mock_voter(3, 1, 3)),
+                Some(mock_user(3, "Carol")),
+            ),
         ];
         let event = mock_event(votes);
         let stats = event.get_vote_statistics();
@@ -488,15 +556,18 @@ mod tests {
     fn test_get_ranked_statistics() {
         let votes = vec![
             (
-                mock_vote(1, 1, 1, vec!["Alice", "Bob", "Carol"]),
+                mock_vote(1, vec!["Alice", "Bob", "Carol"]),
+                Some(mock_voter(1, 1, 1)),
                 Some(mock_user(1, "Voter1")),
             ),
             (
-                mock_vote(2, 1, 2, vec!["Bob", "Alice", "Carol"]),
+                mock_vote(2, vec!["Bob", "Alice", "Carol"]),
+                Some(mock_voter(2, 1, 2)),
                 Some(mock_user(2, "Voter2")),
             ),
             (
-                mock_vote(3, 1, 3, vec!["Alice", "Carol", "Bob"]),
+                mock_vote(3, vec!["Alice", "Carol", "Bob"]),
+                Some(mock_voter(3, 1, 3)),
                 Some(mock_user(3, "Voter3")),
             ),
         ];
@@ -526,15 +597,18 @@ mod tests {
     fn test_export_result_json_election() {
         let votes = vec![
             (
-                mock_vote(1, 1, 1, vec!["Alice", "Bob"]),
+                mock_vote(1, vec!["Alice", "Bob"]),
+                Some(mock_voter(1, 1, 1)),
                 Some(mock_user(1, "Voter1")),
             ),
             (
-                mock_vote(2, 1, 2, vec!["Alice", "Bob"]),
+                mock_vote(2, vec!["Alice", "Bob"]),
+                Some(mock_voter(2, 1, 2)),
                 Some(mock_user(2, "Voter2")),
             ),
             (
-                mock_vote(3, 1, 3, vec!["Bob", "Alice"]),
+                mock_vote(3, vec!["Bob", "Alice"]),
+                Some(mock_voter(3, 1, 3)),
                 Some(mock_user(3, "Voter3")),
             ),
         ];
@@ -557,19 +631,23 @@ mod tests {
         // 4 voters: Alice gets 3 first-choice votes (75%), Bob gets 1 (25%)
         let votes = vec![
             (
-                mock_vote(1, 1, 1, vec!["Alice", "Bob"]),
+                mock_vote(1, vec!["Alice", "Bob"]),
+                Some(mock_voter(1, 1, 1)),
                 Some(mock_user(1, "Voter1")),
             ),
             (
-                mock_vote(2, 1, 2, vec!["Alice", "Bob"]),
+                mock_vote(2, vec!["Alice", "Bob"]),
+                Some(mock_voter(2, 1, 2)),
                 Some(mock_user(2, "Voter2")),
             ),
             (
-                mock_vote(3, 1, 3, vec!["Alice", "Bob"]),
+                mock_vote(3, vec!["Alice", "Bob"]),
+                Some(mock_voter(3, 1, 3)),
                 Some(mock_user(3, "Voter3")),
             ),
             (
-                mock_vote(4, 1, 4, vec!["Bob", "Alice"]),
+                mock_vote(4, vec!["Bob", "Alice"]),
+                Some(mock_voter(4, 1, 4)),
                 Some(mock_user(4, "Voter4")),
             ),
         ];
@@ -589,11 +667,13 @@ mod tests {
         // voter1 ranks 3, voter2 ranks only 1
         let votes = vec![
             (
-                mock_vote(1, 1, 1, vec!["Alice", "Bob", "Carol"]),
+                mock_vote(1, vec!["Alice", "Bob", "Carol"]),
+                Some(mock_voter(1, 1, 1)),
                 Some(mock_user(1, "Voter1")),
             ),
             (
-                mock_vote(2, 1, 2, vec!["Bob"]),
+                mock_vote(2, vec!["Bob"]),
+                Some(mock_voter(2, 1, 2)),
                 Some(mock_user(2, "Voter2")),
             ),
         ];
@@ -612,11 +692,13 @@ mod tests {
     fn test_export_result_pdf_election_returns_bytes() {
         let votes = vec![
             (
-                mock_vote(1, 1, 1, vec!["Alice", "Bob", "Carol"]),
+                mock_vote(1, vec!["Alice", "Bob", "Carol"]),
+                Some(mock_voter(1, 1, 1)),
                 Some(mock_user(1, "Voter1")),
             ),
             (
-                mock_vote(2, 1, 2, vec!["Bob", "Alice", "Carol"]),
+                mock_vote(2, vec!["Bob", "Alice", "Carol"]),
+                Some(mock_voter(2, 1, 2)),
                 Some(mock_user(2, "Voter2")),
             ),
         ];
@@ -629,9 +711,21 @@ mod tests {
     #[test]
     fn test_export_result_json_preview() {
         let votes = vec![
-            (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
-            (mock_vote(2, 1, 2, vec!["no"]), Some(mock_user(2, "Bob"))),
-            (mock_vote(3, 1, 3, vec!["yes"]), Some(mock_user(3, "Carol"))),
+            (
+                mock_vote(1, vec!["yes"]),
+                Some(mock_voter(1, 1, 1)),
+                Some(mock_user(1, "Alice")),
+            ),
+            (
+                mock_vote(2, vec!["no"]),
+                Some(mock_voter(2, 1, 2)),
+                Some(mock_user(2, "Bob")),
+            ),
+            (
+                mock_vote(3, vec!["yes"]),
+                Some(mock_voter(3, 1, 3)),
+                Some(mock_user(3, "Carol")),
+            ),
         ];
         let event = mock_event(votes);
         let result = event.export_result_json();
@@ -641,9 +735,21 @@ mod tests {
     #[test]
     fn test_export_result_json() {
         let votes = vec![
-            (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
-            (mock_vote(2, 1, 2, vec!["yes"]), Some(mock_user(2, "Bob"))),
-            (mock_vote(3, 1, 3, vec!["no"]), Some(mock_user(3, "Carol"))),
+            (
+                mock_vote(1, vec!["yes"]),
+                Some(mock_voter(1, 1, 1)),
+                Some(mock_user(1, "Alice")),
+            ),
+            (
+                mock_vote(2, vec!["yes"]),
+                Some(mock_voter(2, 1, 2)),
+                Some(mock_user(2, "Bob")),
+            ),
+            (
+                mock_vote(3, vec!["no"]),
+                Some(mock_voter(3, 1, 3)),
+                Some(mock_user(3, "Carol")),
+            ),
         ];
         let event = mock_event(votes);
         let result = event.export_result_json();
@@ -672,7 +778,8 @@ mod tests {
     #[test]
     fn test_export_result_json_with_end_time() {
         let mut event = mock_event(vec![(
-            mock_vote(1, 1, 1, vec!["yes"]),
+            mock_vote(1, vec!["yes"]),
+            Some(mock_voter(1, 1, 1)),
             Some(mock_user(1, "Alice")),
         )]);
         event.end_time = Some(chrono::Utc::now().fixed_offset());
@@ -687,8 +794,16 @@ mod tests {
     #[ignore = "requires LiberationSans font files in ./fonts directory"]
     fn test_export_result_pdf_returns_bytes() {
         let votes = vec![
-            (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
-            (mock_vote(2, 1, 2, vec!["no"]), Some(mock_user(2, "Bob"))),
+            (
+                mock_vote(1, vec!["yes"]),
+                Some(mock_voter(1, 1, 1)),
+                Some(mock_user(1, "Alice")),
+            ),
+            (
+                mock_vote(2, vec!["no"]),
+                Some(mock_voter(2, 1, 2)),
+                Some(mock_user(2, "Bob")),
+            ),
         ];
         let event = mock_event(votes);
         let bytes = event.export_result_pdf();
@@ -710,9 +825,21 @@ mod tests {
     #[ignore = "preview only — writes pdf to /tmp and does not clean up"]
     fn test_export_result_pdf_preview() {
         let votes = vec![
-            (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
-            (mock_vote(2, 1, 2, vec!["no"]), Some(mock_user(2, "Bob"))),
-            (mock_vote(3, 1, 3, vec!["yes"]), Some(mock_user(3, "Carol"))),
+            (
+                mock_vote(1, vec!["yes"]),
+                Some(mock_voter(1, 1, 1)),
+                Some(mock_user(1, "Alice")),
+            ),
+            (
+                mock_vote(2, vec!["no"]),
+                Some(mock_voter(2, 1, 2)),
+                Some(mock_user(2, "Bob")),
+            ),
+            (
+                mock_vote(3, vec!["yes"]),
+                Some(mock_voter(3, 1, 3)),
+                Some(mock_user(3, "Carol")),
+            ),
         ];
         let event = mock_event(votes);
         let bytes = event.export_result_pdf();
@@ -724,19 +851,23 @@ mod tests {
     fn test_export_result_pdf_preview_election() {
         let votes = vec![
             (
-                mock_vote(1, 1, 1, vec!["Alice", "Bob", "Carol"]),
+                mock_vote(1, vec!["Alice", "Bob", "Carol"]),
+                Some(mock_voter(1, 1, 1)),
                 Some(mock_user(1, "Voter1")),
             ),
             (
-                mock_vote(2, 1, 2, vec!["Bob", "Alice", "Carol"]),
+                mock_vote(2, vec!["Bob", "Alice", "Carol"]),
+                Some(mock_voter(2, 1, 2)),
                 Some(mock_user(2, "Voter2")),
             ),
             (
-                mock_vote(3, 1, 3, vec!["Alice", "Carol", "Bob"]),
+                mock_vote(3, vec!["Alice", "Carol", "Bob"]),
+                Some(mock_voter(3, 1, 3)),
                 Some(mock_user(3, "Voter3")),
             ),
             (
-                mock_vote(4, 1, 4, vec!["Carol", "Alice", "Bob"]),
+                mock_vote(4, vec!["Carol", "Alice", "Bob"]),
+                Some(mock_voter(4, 1, 4)),
                 Some(mock_user(4, "Voter4")),
             ),
         ];
@@ -749,8 +880,16 @@ mod tests {
     #[ignore = "requires LiberationSans font files in ./fonts directory"]
     fn test_export_result_pdf_saves_to_file() {
         let votes = vec![
-            (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
-            (mock_vote(2, 1, 2, vec!["no"]), Some(mock_user(2, "Bob"))),
+            (
+                mock_vote(1, vec!["yes"]),
+                Some(mock_voter(1, 1, 1)),
+                Some(mock_user(1, "Alice")),
+            ),
+            (
+                mock_vote(2, vec!["no"]),
+                Some(mock_voter(2, 1, 2)),
+                Some(mock_user(2, "Bob")),
+            ),
         ];
         let event = mock_event(votes);
         let bytes = event.export_result_pdf();
@@ -768,15 +907,24 @@ mod tests {
     fn test_export_result_pdf_speed() {
         // small event — 2 votes
         let votes_small = vec![
-            (mock_vote(1, 1, 1, vec!["yes"]), Some(mock_user(1, "Alice"))),
-            (mock_vote(2, 1, 2, vec!["no"]), Some(mock_user(2, "Bob"))),
+            (
+                mock_vote(1, vec!["yes"]),
+                Some(mock_voter(1, 1, 1)),
+                Some(mock_user(1, "Alice")),
+            ),
+            (
+                mock_vote(2, vec!["no"]),
+                Some(mock_voter(2, 1, 2)),
+                Some(mock_user(2, "Bob")),
+            ),
         ];
 
         // large event — 100 votes
         let votes_large: Vec<_> = (1..=100)
             .map(|i| {
                 (
-                    mock_vote(i, 1, i, vec!["yes"]),
+                    mock_vote(i, vec!["yes"]),
+                    Some(mock_voter(i, 1, i)),
                     Some(mock_user(i, &format!("User{}", i))),
                 )
             })

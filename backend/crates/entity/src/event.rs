@@ -38,8 +38,8 @@ pub enum Relation {
         on_delete = "Cascade"
     )]
     User,
-    #[sea_orm(has_many = "super::vote::Entity")]
-    Vote,
+    #[sea_orm(has_many = "super::voter::Entity")]
+    Voter,
 }
 
 impl Related<super::organization::Entity> for Entity {
@@ -54,9 +54,9 @@ impl Related<super::user::Entity> for Entity {
     }
 }
 
-impl Related<super::vote::Entity> for Entity {
+impl Related<super::voter::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::Vote.def()
+        Relation::Voter.def()
     }
 }
 
