@@ -20,13 +20,20 @@ pub struct AppState {
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt::init();
     dotenv().ok();
 
     let db_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let db = sea_orm::Database::connect(&db_url).await?;
+    let db = sea_orm::Database::connect(&db_url)
+        .await
+        .expect("Failed to connect to database");
 
-    Migrator::up(&db, None).await;
+    Migrator::up(&db, None)
+        .await
+        .expect("Failed to run migrations");
     println!("Migration complete!");
+
+    server::setup().await;
 
     let store = Store::new(db);
 
@@ -43,7 +50,4 @@ async fn main() {
 
     println!("Listening on http://0.0.0.0:3000");
     axum::serve(listener, app).await.expect("Server error");
-
-    tracing_subscriber::fmt::init();
-    server::setup().await;
 }
