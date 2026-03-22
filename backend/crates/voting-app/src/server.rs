@@ -83,6 +83,14 @@ pub async fn setup() {
             "/auth/status",
             get(crate::domain::auth::handlers::auth_status),
         )
+        .route(
+            "/events/:id/vote",
+            axum::routing::post(crate::domain::votes::handlers::cast_vote),
+        )
+        .route(
+            "/events/:id/results",
+            get(crate::domain::votes::handlers::get_motion_results),
+        )
         .route("/health", get(|| async { "OK" }))
         .fallback(get(crate::domain::auth::handlers::demo_not_found)) // demo only
         .layer(oidc_auth_service)
