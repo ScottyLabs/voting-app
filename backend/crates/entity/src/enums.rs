@@ -2,7 +2,9 @@
 
 use sea_orm::entity::prelude::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, serde::Serialize, serde::Deserialize,
+)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "event_type")]
 pub enum EventType {
     #[sea_orm(string_value = "motion")]
@@ -10,7 +12,9 @@ pub enum EventType {
     #[sea_orm(string_value = "election")]
     Election,
 }
-#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, serde::Serialize, serde::Deserialize,
+)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "status_option")]
 pub enum StatusOption {
     #[sea_orm(string_value = "active")]
