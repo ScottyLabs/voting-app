@@ -1,10 +1,10 @@
+use crate::AppState;
 use axum::{
     Json,
     extract::{Path, State},
     http::StatusCode,
 };
 use entity::organization_member;
-use crate::AppState;
 
 #[axum::debug_handler]
 pub async fn join(
@@ -14,7 +14,8 @@ pub async fn join(
     // TODO: replace with real auth middleware
     let user_id = 1;
 
-    let event = state.store
+    let event = state
+        .store
         .events()
         .find_active_by_session_code(&session_code)
         .await
@@ -26,7 +27,8 @@ pub async fn join(
             )
         })?;
 
-    let member = state.store
+    let member = state
+        .store
         .organization_members()
         .find_by_organization_and_user(event.organization_id, user_id)
         .await

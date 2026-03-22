@@ -1,3 +1,4 @@
+use crate::handlers;
 use axum::{Router, middleware, response::IntoResponse, routing::get};
 use axum_oidc::{EmptyAdditionalClaims, OidcAuthLayer, OidcLoginLayer, error::MiddlewareError};
 use http::Uri;
@@ -9,7 +10,6 @@ use tower_sessions::{
     cookie::{SameSite, time::Duration},
 };
 use voting_app_store::Store;
-use crate::handlers;
 
 use crate::{AppState, config::Config};
 
