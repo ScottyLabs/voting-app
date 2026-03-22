@@ -4,17 +4,17 @@ use axum::{
     http::StatusCode,
 };
 use entity::organization_member;
-use voting_app_store::Store;
+use crate::AppState;
 
 #[axum::debug_handler]
 pub async fn join(
-    State(store): State<Store>,
+    State(state): State<AppState>,
     Path(session_code): Path<String>,
 ) -> Result<Json<organization_member::Model>, (StatusCode, String)> {
     // TODO: replace with real auth middleware
     let user_id = 1;
 
-    let event = store
+    let event = state.store
         .events()
         .find_active_by_session_code(&session_code)
         .await
@@ -26,7 +26,7 @@ pub async fn join(
             )
         })?;
 
-    let member = store
+    let member = state.store
         .organization_members()
         .find_by_organization_and_user(event.organization_id, user_id)
         .await

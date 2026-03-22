@@ -8,6 +8,8 @@ use tower_sessions::{
     Expiry, SessionManagerLayer,
     cookie::{SameSite, time::Duration},
 };
+use voting_app_store::Store;
+use crate::handlers;
 
 use crate::{AppState, config::Config};
 
@@ -21,8 +23,10 @@ pub async fn setup() {
     Migrator::up(&db, None)
         .await
         .expect("failed to run database migrations");
+    println!("Migration complete!");
 
-    let app_state = AppState { db, config };
+    let store = Store::new(db.clone());
+    let app_state = AppState { db, store, config };
 
     let session_layer = SessionManagerLayer::new(tower_sessions::MemoryStore::default())
         .with_secure(false)
@@ -84,6 +88,10 @@ pub async fn setup() {
             get(crate::domain::auth::handlers::auth_status),
         )
         .route("/health", get(|| async { "OK" }))
+        .route(
+            "/api/{session_code}/attendance",
+            get(handlers::attendance::join),
+        )
         .fallback(get(crate::domain::auth::handlers::demo_not_found)) // demo only
         .layer(oidc_auth_service)
         .layer(session_layer)
@@ -92,6 +100,7 @@ pub async fn setup() {
     let listener = tokio::net::TcpListener::bind(&bind_addr)
         .await
         .expect("failed to bind to server address");
+    println!("Listening on {}", &bind_addr);
 
     axum::serve(listener, api_router.into_make_service())
         .await
