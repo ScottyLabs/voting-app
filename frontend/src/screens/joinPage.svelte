@@ -1,5 +1,18 @@
 <script lang="ts">
-    let { toAdmin, toVoter } = $props();
+    let {
+        joinEvent,
+        joinError,
+        joining,
+        toVoter,
+        toAdmin,
+    }: {
+        joinEvent: (sessionCode: string) => Promise<void>;
+        joinError: string | null;
+        joining: boolean;
+        toVoter: () => void;
+        toAdmin: () => void;
+    } = $props();
+
     let sessionID = $state("");
 </script>
 

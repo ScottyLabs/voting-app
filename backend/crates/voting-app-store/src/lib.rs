@@ -6,6 +6,7 @@ pub mod votes;
 
 use sea_orm::DatabaseConnection;
 
+#[derive(Clone)]
 pub struct Store {
     db: DatabaseConnection,
 }

@@ -6,79 +6,57 @@
     import ArrayEditor from "../lib/components/arrayEditor.svelte";
     import TimeScroller from "../lib/components/timeScroller.svelte";
     import HoverCard from "../lib/components/hoverCard.svelte";
+    import { User } from "../lib/models/User";
+    import { Event } from "../lib/models/Event";
+
     let { onNext, onBack } = $props();
 
-    function user_new(): User {
-        return {
-            user_id: 6767,
+    function eventDraft_new(vote_type: "motion" | "election"): Event {
+        return new Event({
+            id: 0,
+            event_type: vote_type,
             name: "",
-            created_time: "",
-        };
-    }
-
-    function election_new(): Election {
-        return {
-            title: "",
-            candidates: [],
-            style: "",
-            timer: {
-                days: 0,
-                hours: 0,
-                mins: 0,
-                secs: 0,
+            status: "",
+            start_time: "",
+            end_time: null,
+            data: {
+                description: "",
+                session_code: "",
+                vote_type: vote_type,
+                threshold: 0.5,
+                visibility: {
+                    participants: "hidden_until_release",
+                },
+                proxy: false,
+                vote_options:
+                    vote_type === "motion" ? ["Pass", "Reject", "Abstain"] : [],
             },
-        };
-    }
-
-    function motion_new(): Motion {
-        return {
-            num: 67,
-            description: "",
-            threshold: "",
-            quorum: "",
-            style: "",
-            timer: {
-                days: 0,
-                hours: 0,
-                mins: 0,
-                secs: 0,
-            },
-        };
+            created_by_user_id: 0,
+            organization_id: 0,
+        });
     }
 
     function goNext() {
         onNext?.();
     }
 
-    let Users: User[] = $state([]);
-
-    let user1: User = {
-        user_id: 69,
-        name: "Max Tentype",
-        created_time: "6767-67-67",
-    };
-    let user2: User = {
-        user_id: 420,
-        name: "Yiyoung Liu",
-        created_time: "4200-67-67",
-    };
-    let user3: User = {
-        user_id: 67,
-        name: "Anish Pallati",
-        created_time: "7676-67-67",
-    };
-    Users.push(user1);
-    Users.push(user2);
-    Users.push(user3);
-
-    let temp = 100;
-    for (let i = 0; i < 30; i++) {
-        let newUser: User = user_new();
-        temp++;
-        newUser.name = "M";
-        newUser.user_id = temp;
-        Users.push(newUser);
-    }
+    let users: User[] = $state([
+        new User({
+            id: 69,
+            name: "Max Tentype",
+            created_at: "2026-01-01T00:00:00Z",
+        }),
+        new User({
+            id: 420,
+            name: "Yiyoung Liu",
+            created_at: "2026-01-01T00:00:00Z",
+        }),
+        new User({
+            id: 67,
+            name: "Anish Pallati",
+            created_at: "2026-01-01T00:00:00Z",
+        }),
+    ]);
 
     let meetingCode: string = "3CMU67";
 
@@ -93,8 +71,20 @@
         "Secret Vote",
     ];
 
-    let motion: Motion = $state(motion_new());
-    let election: Election = $state(election_new());
+    let voteThresholds: { label: string; value: number }[] = [
+        { label: "Majority", value: 0.5 },
+        { label: "2/3", value: 0.667 },
+        { label: "3/4", value: 0.75 },
+        { label: "Unanimous", value: 1.0 },
+    ];
+
+    let draft = $state<Event>(eventDraft_new("motion"));
+    let draftTime: Time = $state({
+        days: 0,
+        hours: 0,
+        mins: 0,
+        secs: 0,
+    });
 
     // Popup Booleans
     let creatingMotion = $state(false);
@@ -103,19 +93,17 @@
     let inspectingAllUsers = $state(false);
     let timerEnded = $state(false);
 
-    let voteThresholds: string[] = ["Majority", "2/3", "3/4", "Unanimous"];
-
     function deleteUser(i: number) {
-        Users.splice(i, 1);
+        users.splice(i, 1);
     }
 
     function pushMotion() {
-        motion = motion_new();
+        draft = eventDraft_new("motion");
         creatingMotion = true;
     }
 
     function pushElection() {
-        election = election_new();
+        draft = eventDraft_new("election");
         creatingElection = true;
     }
 
@@ -131,12 +119,10 @@
     }
 
     function inspectUser(user: User) {
-        console.log("inspecting...");
         inspectingUser = user;
     }
 
     function clearInspect() {
-        console.log("stopped inspecting");
         inspectingUser = null;
     }
 
@@ -144,9 +130,48 @@
         timerEnded = true;
     }
 
-    // TODO: after backend exists it can pass on live results to here
     function getResults() {
         return "TBD";
+    }
+
+    const API_BASE = import.meta.env.VITE_API_BASE || "";
+
+    function timerToEndTime(timer: Time): string {
+        const now = Date.now();
+        const ms =
+            timer.days * 86400000 +
+            timer.hours * 3600000 +
+            timer.mins * 60000 +
+            timer.secs * 1000;
+        return new Date(now + ms).toISOString();
+    }
+
+    async function submitDraft() {
+        try {
+            const response = await fetch(`${API_BASE}/api/events`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: draft.name,
+                    vote_type: draft.data.vote_type,
+                    description: draft.data.description,
+                    threshold: draft.data.threshold,
+                    vote_options: draft.data.vote_options,
+                    proxy: draft.data.proxy,
+                    visibility: draft.data.visibility.participants,
+                    organization_id: 1, // TODO: real org from auth
+                    start_time: new Date().toISOString(),
+                    end_time: timerToEndTime(draftTime),
+                }),
+            });
+            if (!response.ok) throw new Error(`Failed: ${response.status}`);
+            const event = await response.json();
+            console.log("Event created:", event);
+            onPopupClose();
+            goNext();
+        } catch (error) {
+            console.error(error);
+        }
     }
 </script>
 
@@ -180,12 +205,12 @@
 </Popup>
 
 <Popup
-    title="Participants (Headcount: {Users.length})"
+    title="Participants (Headcount: {users.length})"
     open={inspectingAllUsers}
     onClose={onPopupClose}
 >
     <div class="button-list">
-        {#each Users as user, i}
+        {#each users as user, i}
             <div
                 class="slot-wrapper"
                 role="group"
@@ -195,11 +220,11 @@
                 <button onclick={() => deleteUser(i)} class="slotDel">
                     {user.name?.charAt(0)}
                 </button>
-                <HoverCard open={inspectingUser?.user_id === user.user_id}>
+                <HoverCard open={inspectingUser?.id === user.id}>
                     <div class="col">
                         <div>Name: {user.name}</div>
-                        <div>UserID: {user.user_id}</div>
-                        <div>Time Created: {user.created_time}</div>
+                        <div>UserID: {user.id}</div>
+                        <div>Time Created: {user.id}</div>
                     </div>
                 </HoverCard>
             </div>
@@ -208,57 +233,52 @@
 </Popup>
 
 <Popup
-    title="Motion #{motion.num}"
+    title="Motion #{draft.name}"
     open={creatingMotion}
     onClose={onPopupClose}
 >
     <form onsubmit={onPopupClose}>
         <LongTextInput
             title="Description:"
-            bind:value={motion.description}
+            bind:value={draft.data.description}
             emptyPlaceholder="Input Description"
         ></LongTextInput>
 
-        <label>
-            <h3>Quorum:</h3>
-            <input type="text" bind:value={motion.quorum} required />
-        </label>
-
         <SelectMenu
             title="Threshold:"
-            bind:value={motion.threshold}
+            bind:value={draft.data.threshold}
             options={voteThresholds}
         ></SelectMenu>
 
         <SelectMenu
             title="Voting Style:"
-            bind:value={motion.style}
+            bind:value={draft.data.vote_type}
             options={voteStyleOptions}
         ></SelectMenu>
 
-        <TimeScroller value={motion.timer}></TimeScroller>
+        <TimeScroller value={draftTime}></TimeScroller>
 
         <button type="submit" class="submitBtn">Push Motion</button>
     </form>
 </Popup>
 
-<Popup title={election.title} open={creatingElection} onClose={onPopupClose}>
+<Popup title={draft.name} open={creatingElection} onClose={onPopupClose}>
     <form onsubmit={onPopupClose}>
         <label>
             <h3>Title:</h3>
-            <input type="text" bind:value={election.title} required />
+            <input type="text" bind:value={draft.name} required />
         </label>
 
-        <ArrayEditor title="Candidates" bind:items={election.candidates}
+        <ArrayEditor title="Candidates" bind:items={draft.data.vote_options}
         ></ArrayEditor>
 
         <SelectMenu
             title="Election Style:"
-            bind:value={election.style}
+            bind:value={draft.data.vote_type}
             options={electionStyleOptions}
         ></SelectMenu>
 
-        <TimeScroller bind:value={election.timer}></TimeScroller>
+        <TimeScroller bind:value={draftTime}></TimeScroller>
 
         <button type="submit" class="submitBtn">Push Election</button>
     </form>
@@ -277,7 +297,7 @@
             <h1>Participants</h1>
             <div class="container">
                 <div class="button-list">
-                    {#each Users.slice(0, 30 - 1) as user}
+                    {#each users.slice(0, 30 - 1) as user}
                         <div
                             class="slot-wrapper"
                             role="group"
@@ -288,18 +308,18 @@
                                 {user.name?.charAt(0)}
                             </button>
                             <HoverCard
-                                open={inspectingUser?.user_id ===
-                                    user.user_id && !inspectingAllUsers}
+                                open={inspectingUser?.id === user.id &&
+                                    !inspectingAllUsers}
                             >
                                 <div class="col">
                                     <div>Name: {user.name}</div>
-                                    <div>UserID: {user.user_id}</div>
-                                    <div>Time Created: {user.created_time}</div>
+                                    <div>UserID: {user.id}</div>
+                                    <div>Time Created: {user.created_at}</div>
                                 </div>
                             </HoverCard>
                         </div>
                     {/each}
-                    {#if Users.length >= 30}
+                    {#if users.length >= 30}
                         <button onclick={inspectAllUsers} class="slot plus"
                             >+</button
                         >
