@@ -4,8 +4,12 @@ use chrono::{DateTime, FixedOffset};
 use entity::event::Entity as Event;
 use entity::user::{self, Entity as User};
 use entity::vote::{self, Entity as Vote};
+use entity::voter::{self, Entity as Voter};
 use genpdf::elements::FrameCellDecorator;
-use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, LoaderTrait, QueryFilter};
+use sea_orm::{
+    ColumnTrait, DatabaseConnection, EntityTrait, JoinType, LoaderTrait, QueryFilter, QuerySelect,
+    RelationTrait,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -61,7 +65,7 @@ struct EventLoadStatic {
     data: EventData,                   //parsed event.data JSON
     created_by_user_id: i32,
     organization_id: i32,
-    votes_with_user: Vec<(vote::Model, Option<user::Model>)>,
+    votes_with_user: Vec<(vote::Model, Option<voter::Model>)>,
     // list of tuples. Each vote paired with its user.
     //For now, user might be Null
 }
@@ -72,13 +76,15 @@ impl EventLoadStatic {
         let event = Event::find_by_id(event_id).one(db).await.ok()??;
 
         let votes = Vote::find()
-            .filter(vote::Column::EventId.eq(event_id))
+            //.join(JoinType::InnerJoin, vote::Relation::Voter.def())
+            .find_also_related(voter::Entity)
+            .filter(voter::Column::EventId.eq(event_id))
             .all(db)
             .await
             .ok()?;
 
-        let users = votes.load_one(User, db).await.ok()?;
-        let votes_with_user = votes.into_iter().zip(users.into_iter()).collect();
+        //let users = votes.load_one(User, db).await.ok()?;
+        //let votes_with_user = votes.into_iter().zip(users.into_iter()).collect();
         //parse event.data (JSON)
         let data: EventData = serde_json::from_value(event.data).ok()?;
         Some(EventLoadStatic {
@@ -92,7 +98,7 @@ impl EventLoadStatic {
             data,
             created_by_user_id: event.created_by_user_id,
             organization_id: event.organization_id,
-            votes_with_user,
+            votes_with_user: votes,
         })
     }
 
