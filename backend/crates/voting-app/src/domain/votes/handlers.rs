@@ -8,8 +8,9 @@ use axum::{
 };
 use chrono::Utc;
 use entity::enums::StatusOption;
-use entity::vote;
+use entity::{prelude::Vote, prelude::Voter, vote, voter};
 use sea_orm::ActiveValue::Set;
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use voting_app_store::Store;
@@ -36,7 +37,7 @@ pub async fn cast_vote(
     Path(event_id): Path<i32>,
     Json(body): Json<CastVoteRequest>,
 ) -> impl IntoResponse {
-    let store = Store::new(state.db.clone());
+    let store = &state.store;
 
     let event = match store.events().find_by_id(event_id).await {
         Ok(Some(e)) => e,
@@ -59,7 +60,7 @@ pub async fn cast_vote(
     let event_data = event.data.clone();
     let vote_type = event_data["vote_type"].as_str().unwrap_or("");
 
-    if vote_type != "motion" || vote_type != "election" {
+    if vote_type != "motion" && vote_type != "election" {
         return (
             StatusCode::BAD_REQUEST,
             Json(json!({"error": "Event is not a motion"})),
@@ -67,8 +68,30 @@ pub async fn cast_vote(
             .into_response();
     }
 
+    let voter = match Voter::find()
+        .filter(voter::Column::EventId.eq(event_id))
+        .filter(voter::Column::VoterId.eq(user.0.id))
+        .one(store.db())
+        .await
+    {
+        Ok(Some(v)) => v,
+        Ok(None) => {
+            return (
+                StatusCode::FORBIDDEN,
+                Json(json!({"error": "User is not eligible to vote in this event"})),
+            )
+                .into_response();
+        }
+        Err(_) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "Database error"})),
+            )
+                .into_response();
+        }
+    };
+
     if event.status != StatusOption::Active {
-        //CHANGE THIS WHEN YIYOUNG CHANGES TO ENUM
         return (
             StatusCode::BAD_REQUEST,
             Json(json!({"error": "Event is not open"})),
@@ -108,12 +131,11 @@ pub async fn cast_vote(
     }
 
     let new_vote = vote::ActiveModel {
-        event_id: Set(event_id),
-        voter_id: Set(user.0.id),
+        id: Set(voter.id),
         cast_time: Set(Utc::now().into()),
-        proxy: Set(body.proxy),
         data: Set(json!({
-            "vote_type": "motion",
+            "vote_type": vote_type,
+            "proxy": body.proxy,
             "vote_response": body.vote_response,
         })),
         ..Default::default()
@@ -181,7 +203,12 @@ pub async fn get_motion_results(
             .into_response();
     }
 
-    let votes = match store.votes().find_by_event_id(event_id).await {
+    let votes = match Vote::find()
+        .find_also_related(voter::Entity)
+        .filter(voter::Column::EventId.eq(event_id))
+        .all(store.db())
+        .await
+    {
         Ok(v) => v,
         Err(_) => {
             return (
@@ -196,13 +223,17 @@ pub async fn get_motion_results(
     let mut reject = 0u32;
     let mut abstain = 0u32;
 
-    for vote in &votes {
-        match vote.data["vote_response"][0]
-            .as_str()
+    for (vote, _) in &votes {
+        let response = vote
+            .data
+            .get("vote_response")
+            .and_then(|value| value.as_array())
+            .and_then(|values| values.first())
+            .and_then(|value| value.as_str())
             .unwrap_or("")
-            .to_lowercase()
-            .as_str()
-        {
+            .to_lowercase();
+
+        match response.as_str() {
             "pass" => pass += 1,
             "reject" => reject += 1,
             "abstain" => abstain += 1,

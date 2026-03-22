@@ -88,11 +88,11 @@ pub async fn setup() {
             get(crate::domain::auth::handlers::auth_status),
         )
         .route(
-            "/events/:id/vote",
+            "/events/{id}/vote",
             axum::routing::post(crate::domain::votes::handlers::cast_vote),
         )
         .route(
-            "/events/:id/results",
+            "/events/{id}/results",
             get(crate::domain::votes::handlers::get_motion_results),
         )
         .route("/health", get(|| async { "OK" }))
